@@ -399,6 +399,20 @@ input[type="range"] {
   font-size: 0.85rem;
   color: var(--good);
 }
+.param-viz {
+  width: 100%;
+  margin: 10px 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  line-height: 0;
+}
+.param-viz-caption {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0 0 4px;
+}
 .param-card-summary {
   margin: 8px 0 6px;
   font-size: 0.9rem;
@@ -584,6 +598,25 @@ input[type="range"] {
 .lesson-standards li {
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
+}
+
+.lesson-figure {
+  margin: 0 0 16px;
+}
+.lesson-figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+}
+.lesson-figure figcaption {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  margin-top: 8px;
 }
 
 .lesson-callout {

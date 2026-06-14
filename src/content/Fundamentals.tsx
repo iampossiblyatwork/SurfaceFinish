@@ -1,4 +1,5 @@
 import { Lesson, Callout } from "./Lesson";
+import processingChain from "../assets/processing-chain.png";
 
 export function Overview() {
   return (
@@ -53,6 +54,15 @@ export function ProcessingChain() {
       title="The ISO processing chain"
       intro="Every roughness number starts as a raw stylus trace and is transformed in stages. Knowing the stage you're looking at is half the battle."
     >
+      <figure className="lesson-figure">
+        <img src={processingChain} alt="ISO surface texture processing road map: total profile through form removal, λs and λc filters, into roughness and waviness profiles and their parameters." />
+        <figcaption>
+          The full ISO processing road map — from the total profile through form
+          removal and the λs/λc filters to the roughness and waviness profiles
+          and their parameters.
+        </figcaption>
+      </figure>
+
       <ol className="lesson-steps">
         <li>
           <strong>Step 1 — Collect raw data.</strong> The trace with no form

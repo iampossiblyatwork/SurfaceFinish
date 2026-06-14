@@ -54,6 +54,7 @@ export function ParameterDictionary({
                 <ParameterCard
                   key={p.symbol}
                   def={p}
+                  profile={trace.profile}
                   value={
                     p.key && trace.params && p.key in trace.params
                       ? formatParameterValue(
