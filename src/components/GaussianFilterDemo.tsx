@@ -40,7 +40,8 @@ export function GaussianFilterDemo() {
   const mainWrap = useRef<HTMLDivElement>(null);
   const transWrap = useRef<HTMLDivElement>(null);
 
-  // --- Main split plot: primary + waviness (top), roughness (bottom) ---
+  // --- Main plot: primary (top), low-pass band / waviness (middle),
+  //     high-pass band / roughness (bottom). Both bands get equal billing. ---
   useEffect(() => {
     const canvas = mainRef.current;
     const wrap = mainWrap.current;
@@ -50,7 +51,7 @@ export function GaussianFilterDemo() {
       if (!ctx) return;
       const dpr = window.devicePixelRatio || 1;
       const cssW = wrap.clientWidth || 320;
-      const cssH = 260;
+      const cssH = 330;
       canvas.width = Math.round(cssW * dpr);
       canvas.height = Math.round(cssH * dpr);
       canvas.style.width = `${cssW}px`;
@@ -62,6 +63,7 @@ export function GaussianFilterDemo() {
       const accent = cssVar("--accent", "#5fb0ff");
       const good = cssVar("--good", "#5fd0a0");
       const muted = cssVar("--muted", "#7d8c9a");
+      const text = cssVar("--text", "#d7dee6");
       const faint = cssVar("--border", "#243140");
 
       ctx.fillStyle = bg;
@@ -70,11 +72,13 @@ export function GaussianFilterDemo() {
       const n = profile.z.length;
       const pad = 8;
       const plotW = cssW - pad * 2;
-      const panelH = (cssH - pad * 3) / 2;
-      const topMid = pad + panelH / 2;
-      const botMid = pad * 2 + panelH + panelH / 2;
+      const panelH = (cssH - pad * 4) / 3;
+      const mid1 = pad + panelH / 2;
+      const mid2 = pad * 2 + panelH + panelH / 2;
+      const mid3 = pad * 3 + panelH * 2 + panelH / 2;
 
-      // Shared honest scale based on the primary profile.
+      // Shared honest scale based on the primary profile, so the three rows are
+      // directly comparable — you can see the roughness is the small wiggle.
       let maxAbs = 0;
       for (const v of profile.z) maxAbs = Math.max(maxAbs, Math.abs(v));
       if (maxAbs === 0) maxAbs = 1;
@@ -99,26 +103,34 @@ export function GaussianFilterDemo() {
         ctx.stroke();
       };
 
-      // mean lines
+      // mean / reference lines
       ctx.strokeStyle = grid;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(pad, topMid); ctx.lineTo(pad + plotW, topMid);
-      ctx.moveTo(pad, botMid); ctx.lineTo(pad + plotW, botMid);
+      ctx.moveTo(pad, mid1); ctx.lineTo(pad + plotW, mid1);
+      ctx.moveTo(pad, mid2); ctx.lineTo(pad + plotW, mid2);
+      ctx.moveTo(pad, mid3); ctx.lineTo(pad + plotW, mid3);
       ctx.stroke();
 
-      // top: primary faint + waviness bold
-      series(profile.z, topMid, faint, 1);
-      series(waviness, topMid, accent, 2);
+      // row 1: the primary profile (the unfiltered input)
+      series(profile.z, mid1, text, 1.4);
 
-      // bottom: roughness
-      series(roughness, botMid, good, 1.4);
+      // row 2: low-pass band → waviness, faint primary behind for reference
+      series(profile.z, mid2, faint, 1);
+      series(waviness, mid2, accent, 2);
+
+      // row 3: high-pass band → roughness, faint primary behind for reference
+      series(profile.z, mid3, faint, 1);
+      series(roughness, mid3, good, 1.6);
 
       // labels
       ctx.fillStyle = muted;
       ctx.font = "11px system-ui, sans-serif";
-      ctx.fillText("Primary profile (faint) + waviness / mean line", pad + 2, pad + 11);
-      ctx.fillText("Roughness profile — what passes the filter", pad + 2, pad * 2 + panelH + 11);
+      ctx.fillText("Primary profile — the unfiltered input", pad + 2, pad + 11);
+      ctx.fillStyle = accent;
+      ctx.fillText("Low-pass band → waviness (λ longer than λc)", pad + 2, pad * 2 + panelH + 11);
+      ctx.fillStyle = good;
+      ctx.fillText("High-pass band → roughness (λ shorter than λc)", pad + 2, pad * 3 + panelH * 2 + 11);
     };
     draw();
     const ro = new ResizeObserver(draw);
@@ -219,7 +231,7 @@ export function GaussianFilterDemo() {
   return (
     <div className="filter-demo">
       <div ref={mainWrap} className="filter-demo-canvas">
-        <canvas ref={mainRef} role="img" aria-label="Primary profile split into waviness and roughness" />
+        <canvas ref={mainRef} role="img" aria-label="Primary profile split by the Gaussian filter into a low-pass waviness band and a high-pass roughness band" />
       </div>
 
       <div className="filter-demo-readout">
@@ -256,10 +268,13 @@ export function GaussianFilterDemo() {
       </div>
 
       <p className="filter-demo-caption">
-        Drag the cutoff. Everything <em>longer</em> than λc goes to waviness (blue
-        mean line); everything <em>shorter</em> becomes roughness (green). A small
-        cutoff leaves almost everything as waviness; a large cutoff sweeps more of
-        the surface into roughness.
+        Drag the cutoff. The Gaussian filter splits the primary profile (top) into
+        two complementary bands: the <strong>low-pass</strong> band keeps everything{" "}
+        <em>longer</em> than λc — the waviness (blue, middle) — while the{" "}
+        <strong>high-pass</strong> band keeps everything <em>shorter</em> than λc —
+        the roughness (green, bottom). Add the two bands back together and you get
+        the primary profile. A small cutoff sends almost everything to waviness; a
+        large cutoff sweeps more of the surface into roughness.
       </p>
 
       <div ref={transWrap} className="filter-demo-canvas trans">
