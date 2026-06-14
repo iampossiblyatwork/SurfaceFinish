@@ -1,5 +1,8 @@
 import { Lesson, Callout } from "./Lesson";
 import { WaveSum } from "../components/WaveSum";
+import { SamplingLengthDemo } from "../components/SamplingLengthDemo";
+import { GaussianFilterDemo } from "../components/GaussianFilterDemo";
+import { CutoffChooserDemo } from "../components/CutoffChooserDemo";
 
 export function FilteringCutoffs() {
   return (
@@ -41,8 +44,10 @@ export function FilteringCutoffs() {
         One <strong>sampling length</strong> equals one cutoff (λc). The{" "}
         <strong>evaluation length</strong> is normally five sampling lengths
         (the “N&nbsp;=&nbsp;5” you see in callouts). Averaging parameters over
-        five sampling lengths is what gives Ra its famous stability.
+        five sampling lengths is what gives Ra its famous stability. Drag the
+        cutoff below to see the bands resize:
       </p>
+      <SamplingLengthDemo />
       <p className="lesson-source">It is the design engineer's call which cutoff applies — look for it on the callout or in the notes.</p>
     </Lesson>
   );
@@ -106,6 +111,13 @@ export function FilteringTransmission() {
         mirror images that sum to 100% at every wavelength. A wave's amplitude is
         split between roughness and waviness, not duplicated.
       </Callout>
+
+      <h2>See it happen</h2>
+      <p>
+        Drag the cutoff and watch the same primary profile split into a waviness
+        mean line and the roughness that passes through:
+      </p>
+      <GaussianFilterDemo />
 
       <h2>Why it matters</h2>
       <p>
@@ -174,8 +186,10 @@ export function FilteringChoosing() {
       <p>
         These charts are a starting point, not a verdict. The standard procedure
         is to measure, check which band your result lands in, and re-measure at
-        the indicated cutoff if you were in the wrong band.
+        the indicated cutoff if you were in the wrong band. Try it — change the
+        cutoff and watch which band the resulting Ra lands in:
       </p>
+      <CutoffChooserDemo />
       <Callout label="Worked example">
         A polished surface measures Ra&nbsp;0.08&nbsp;µm at a 0.8&nbsp;mm cutoff.
         Per the table, Ra&nbsp;0.08 falls in the 0.02–0.1&nbsp;µm band, whose
