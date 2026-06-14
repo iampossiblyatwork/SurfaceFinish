@@ -3,8 +3,11 @@ import { WaveSum } from "../components/WaveSum";
 import { SamplingLengthDemo } from "../components/SamplingLengthDemo";
 import { GaussianFilterDemo } from "../components/GaussianFilterDemo";
 import { CutoffChooserDemo } from "../components/CutoffChooserDemo";
+import { useUnits } from "../context/UnitsContext";
+import { formatLength, formatLateral, unitLabel } from "../lib/grades";
 
 export function FilteringCutoffs() {
+  const { unit } = useUnits();
   return (
     <Lesson
       title="Cutoffs & sampling length"
@@ -19,9 +22,10 @@ export function FilteringCutoffs() {
       <p>
         The cutoff λc is the wavelength of the Gaussian profile filter. Anything{" "}
         <em>longer</em> than the cutoff is treated as waviness; anything{" "}
-        <em>shorter</em> is treated as roughness. The same physical 0.5&nbsp;mm
-        undulation is “waviness” under a 0.25&nbsp;mm cutoff but “roughness” under
-        a 0.8&nbsp;mm cutoff. Nothing about the surface changed — only the
+        <em>shorter</em> is treated as roughness. The same physical{" "}
+        {formatLateral(0.5, unit)} undulation is &ldquo;waviness&rdquo; under a{" "}
+        {formatLateral(0.25, unit)} cutoff but &ldquo;roughness&rdquo; under
+        a {formatLateral(0.8, unit)} cutoff. Nothing about the surface changed — only the
         cutoff did.
       </p>
 
@@ -131,22 +135,24 @@ export function FilteringTransmission() {
 }
 
 const NON_PERIODIC = [
-  { ra: "(0.006) – 0.02", lc: "0.08", ev: "0.4" },
-  { ra: "0.02 – 0.1", lc: "0.25", ev: "1.25" },
-  { ra: "0.1 – 2", lc: "0.8", ev: "4" },
-  { ra: "2 – 10", lc: "2.5", ev: "12.5" },
-  { ra: "10 – 80", lc: "8", ev: "40" },
+  { raLo: 0.006, raHi: 0.02, raLoParens: true, lc: 0.08, ev: 0.4 },
+  { raLo: 0.02, raHi: 0.1, lc: 0.25, ev: 1.25 },
+  { raLo: 0.1, raHi: 2, lc: 0.8, ev: 4 },
+  { raLo: 2, raHi: 10, lc: 2.5, ev: 12.5 },
+  { raLo: 10, raHi: 80, lc: 8, ev: 40 },
 ];
 
 const PERIODIC = [
-  { sm: "0.013 – 0.04", lc: "0.08" },
-  { sm: "0.04 – 0.13", lc: "0.25" },
-  { sm: "0.13 – 0.4", lc: "0.8" },
-  { sm: "0.4 – 1.3", lc: "2.5" },
-  { sm: "1.3 – 4", lc: "8" },
+  { smLo: 0.013, smHi: 0.04, lc: 0.08 },
+  { smLo: 0.04, smHi: 0.13, lc: 0.25 },
+  { smLo: 0.13, smHi: 0.4, lc: 0.8 },
+  { smLo: 0.4, smHi: 1.3, lc: 2.5 },
+  { smLo: 1.3, smHi: 4, lc: 8 },
 ];
 
 export function FilteringChoosing() {
+  const { unit } = useUnits();
+  const lateralLabel = unit === "uin" ? "in" : "mm";
   return (
     <Lesson
       title="Choosing a cutoff"
@@ -161,11 +167,19 @@ export function FilteringChoosing() {
       <h2>Non-periodic surfaces — select by Ra</h2>
       <table className="lesson-table">
         <thead>
-          <tr><th>Ra (µm)</th><th>Cutoff λc (mm)</th><th>Eval. length (mm)</th></tr>
+          <tr><th>Ra ({unitLabel(unit)})</th><th>Cutoff λc ({lateralLabel})</th><th>Eval. length ({lateralLabel})</th></tr>
         </thead>
         <tbody>
           {NON_PERIODIC.map((r) => (
-            <tr key={r.lc}><td>{r.ra}</td><td>{r.lc}</td><td>{r.ev}</td></tr>
+            <tr key={r.lc}>
+              <td>
+                {"raLoParens" in r ? `(${formatLength(r.raLo, unit)})` : formatLength(r.raLo, unit)}
+                {" – "}
+                {formatLength(r.raHi, unit)}
+              </td>
+              <td>{formatLateral(r.lc, unit)}</td>
+              <td>{formatLateral(r.ev, unit)}</td>
+            </tr>
           ))}
         </tbody>
       </table>
@@ -173,11 +187,14 @@ export function FilteringChoosing() {
       <h2>Periodic surfaces — select by RSm</h2>
       <table className="lesson-table">
         <thead>
-          <tr><th>RSm (mm)</th><th>Cutoff λc (mm)</th></tr>
+          <tr><th>RSm ({lateralLabel})</th><th>Cutoff λc ({lateralLabel})</th></tr>
         </thead>
         <tbody>
           {PERIODIC.map((r) => (
-            <tr key={r.lc}><td>{r.sm}</td><td>{r.lc}</td></tr>
+            <tr key={r.lc}>
+              <td>{formatLateral(r.smLo, unit)} – {formatLateral(r.smHi, unit)}</td>
+              <td>{formatLateral(r.lc, unit)}</td>
+            </tr>
           ))}
         </tbody>
       </table>
@@ -191,10 +208,12 @@ export function FilteringChoosing() {
       </p>
       <CutoffChooserDemo />
       <Callout label="Worked example">
-        A polished surface measures Ra&nbsp;0.08&nbsp;µm at a 0.8&nbsp;mm cutoff.
-        Per the table, Ra&nbsp;0.08 falls in the 0.02–0.1&nbsp;µm band, whose
-        cutoff is <strong>0.25&nbsp;mm</strong>. So you re-evaluate at
-        0.25&nbsp;mm rather than accepting the 0.8&nbsp;mm result.
+        A polished surface measures Ra&nbsp;{formatLength(0.08, unit)} at
+        a {formatLateral(0.8, unit)} cutoff.
+        Per the table, Ra&nbsp;{formatLength(0.08, unit)} falls in the{" "}
+        {formatLength(0.02, unit)}–{formatLength(0.1, unit)} band, whose
+        cutoff is <strong>{formatLateral(0.25, unit)}</strong>. So you re-evaluate at{" "}
+        {formatLateral(0.25, unit)} rather than accepting the {formatLateral(0.8, unit)} result.
       </Callout>
 
       <p className="lesson-source">Cutoff selection per ISO 4288. RSm is also handy here — see the Spacing parameters page.</p>

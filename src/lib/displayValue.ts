@@ -2,7 +2,7 @@
 // the global µm/µin choice. Only height parameters follow the unit toggle;
 // lateral spacing, dimensionless, and angle parameters are quoted conventionally.
 
-import { formatLength, type Unit } from "./grades";
+import { formatLength, formatLateral, type Unit } from "./grades";
 import type { UnitType } from "../data/parameters";
 
 export function formatParameterValue(
@@ -14,10 +14,8 @@ export function formatParameterValue(
     case "height":
       return formatLength(value, unit);
     case "lateral":
-      // RSm is a lateral spacing; show µm, or mm once it gets large.
-      return value >= 1000
-        ? `${(value / 1000).toFixed(3)} mm`
-        : `${value.toFixed(1)} µm`;
+      // RSm stored in µm internally; convert to mm then format as lateral distance.
+      return formatLateral(value / 1000, unit);
     case "angle":
       return `${value.toFixed(2)}°`;
     case "unitless":

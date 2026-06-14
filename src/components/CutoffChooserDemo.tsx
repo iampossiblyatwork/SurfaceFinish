@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { makeProfile, highpass, ra } from "../lib/signal";
 import { useUnits } from "../context/UnitsContext";
-import { formatLength } from "../lib/grades";
+import { formatLength, formatLateral, unitLabel } from "../lib/grades";
 
 function cssVar(name: string, fallback: string): string {
   return (
@@ -106,7 +106,7 @@ export function CutoffChooserDemo() {
       <div className="filter-demo-readout">
         <div>
           <span className="fd-label">Measured at λc</span>
-          <span className="fd-value">{cutoff.toFixed(cutoff < 0.1 ? 3 : 2)} mm</span>
+          <span className="fd-value">{formatLateral(cutoff, unit)}</span>
         </div>
         <div>
           <span className="fd-label">Resulting Ra</span>
@@ -131,7 +131,7 @@ export function CutoffChooserDemo() {
             className={Math.abs(p - cutoff) < 0.005 ? "active" : ""}
             onClick={() => setCutoff(p)}
           >
-            {p} mm
+            {formatLateral(p, unit)}
           </button>
         ))}
       </div>
@@ -140,26 +140,26 @@ export function CutoffChooserDemo() {
         {matches ? (
           <>
             Ra {formatLength(raVal, unit)} falls in the band whose recommended
-            cutoff is <strong>{rec.lc} mm</strong> — your cutoff matches. ✓
+            cutoff is <strong>{formatLateral(rec.lc, unit)}</strong> — your cutoff matches. ✓
           </>
         ) : (
           <>
             Ra {formatLength(raVal, unit)} falls in the band whose recommended
-            cutoff is <strong>{rec.lc} mm</strong>, not {cutoff.toFixed(2)} mm.
-            Re-evaluate at {rec.lc} mm.
+            cutoff is <strong>{formatLateral(rec.lc, unit)}</strong>, not {formatLateral(cutoff, unit)}.
+            Re-evaluate at {formatLateral(rec.lc, unit)}.
           </>
         )}
       </div>
 
       <table className="lesson-table chooser-table">
         <thead>
-          <tr><th>Ra band (µm)</th><th>Recommended λc (mm)</th></tr>
+          <tr><th>Ra band ({unitLabel(unit)})</th><th>Recommended λc ({unit === "uin" ? "in" : "mm"})</th></tr>
         </thead>
         <tbody>
           {BANDS.map((b) => (
             <tr key={b.lc} className={b === rec ? "row-active" : ""}>
-              <td>{b.raLo} – {b.raHi}</td>
-              <td>{b.lc}</td>
+              <td>{formatLength(b.raLo, unit)} – {formatLength(b.raHi, unit)}</td>
+              <td>{formatLateral(b.lc, unit)}</td>
             </tr>
           ))}
         </tbody>

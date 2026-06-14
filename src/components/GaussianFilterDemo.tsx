@@ -7,7 +7,7 @@ import {
   lowpassTransmission,
 } from "../lib/signal";
 import { useUnits } from "../context/UnitsContext";
-import { formatLength } from "../lib/grades";
+import { formatLength, formatLateral } from "../lib/grades";
 
 const PRESETS = [0.08, 0.25, 0.8, 2.5];
 const LMIN = Math.log10(0.08);
@@ -225,7 +225,7 @@ export function GaussianFilterDemo() {
       <div className="filter-demo-readout">
         <div>
           <span className="fd-label">Cutoff λc</span>
-          <span className="fd-value">{cutoff.toFixed(cutoff < 0.1 ? 3 : 2)} mm</span>
+          <span className="fd-value">{formatLateral(cutoff, unit)}</span>
         </div>
         <div>
           <span className="fd-label">Roughness Ra</span>
@@ -250,7 +250,7 @@ export function GaussianFilterDemo() {
             className={Math.abs(p - cutoff) < 0.005 ? "active" : ""}
             onClick={() => setCutoff(p)}
           >
-            {p} mm
+            {formatLateral(p, unit)}
           </button>
         ))}
       </div>

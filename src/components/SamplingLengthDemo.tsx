@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { makeProfile, highpass } from "../lib/signal";
+import { useUnits } from "../context/UnitsContext";
+import { formatLateral } from "../lib/grades";
 
 function cssVar(name: string, fallback: string): string {
   return (
@@ -17,6 +19,7 @@ const LMAX = Math.log10(1.0);
  * bands so the relationship is obvious.
  */
 export function SamplingLengthDemo() {
+  const { unit } = useUnits();
   const [cutoff, setCutoff] = useState(0.25);
   const profile = useMemo(() => makeProfile(700, 5), []);
   const rough = useMemo(
@@ -132,12 +135,12 @@ export function SamplingLengthDemo() {
       <div className="filter-demo-readout">
         <div>
           <span className="fd-label">Sampling length (λc)</span>
-          <span className="fd-value">{cutoff.toFixed(cutoff < 0.1 ? 3 : 2)} mm</span>
+          <span className="fd-value">{formatLateral(cutoff, unit)}</span>
         </div>
         <div>
           <span className="fd-label">Evaluation length (5×)</span>
           <span className="fd-value">
-            {evalLen.toFixed(2)} mm{fitsEval ? "" : " ⚠"}
+            {formatLateral(evalLen, unit)}{fitsEval ? "" : " ⚠"}
           </span>
         </div>
       </div>

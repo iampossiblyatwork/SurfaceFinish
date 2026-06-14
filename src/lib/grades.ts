@@ -5,6 +5,7 @@
 // single source of truth.
 
 export const MICROINCH_PER_MICRON = 39.3701;
+export const MM_PER_INCH = 25.4;
 
 export type Unit = "um" | "uin";
 
@@ -56,6 +57,27 @@ export function toMicrons(value: number, unit: Unit): number {
 
 export function unitLabel(unit: Unit): string {
   return unit === "uin" ? "µin" : "µm";
+}
+
+/**
+ * Format a lateral distance (stored in mm) for display — mm in metric, inches
+ * in imperial. Used for filter cutoffs, sampling lengths, and spatial spacings.
+ */
+export function formatLateral(valueMm: number, unit: Unit): string {
+  if (unit === "uin") {
+    const v = valueMm / MM_PER_INCH;
+    const abs = Math.abs(v);
+    const digits = abs < 0.1 ? 4 : abs < 1 ? 3 : 2;
+    return `${v.toFixed(digits)} in`;
+  }
+  const abs = Math.abs(valueMm);
+  let digits: number;
+  if (abs === 0) digits = 0;
+  else if (abs < 0.1) digits = 3;
+  else if (abs < 1) digits = 2;
+  else if (abs < 10) digits = 1;
+  else digits = 0;
+  return `${valueMm.toFixed(digits)} mm`;
 }
 
 /**

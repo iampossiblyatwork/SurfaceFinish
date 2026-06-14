@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useUnits } from "../context/UnitsContext";
+import { formatLength, formatLateral } from "../lib/grades";
 
 /**
  * Interactive "adding sine waves" demo from the filtering lesson. Two component
@@ -6,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
  * wavelength. Pure client-side math — illustrative, not a measurement.
  */
 export function WaveSum() {
+  const { unit } = useUnits();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [a1, setA1] = useState(0.5);
@@ -119,12 +122,12 @@ export function WaveSum() {
         <fieldset>
           <legend>Wave #1</legend>
           <label>
-            Amplitude <span>{a1.toFixed(2)} µm</span>
+            Amplitude <span>{formatLength(a1, unit)}</span>
             <input type="range" min={0.05} max={1} step={0.01} value={a1}
               onChange={(e) => setA1(Number(e.target.value))} />
           </label>
           <label>
-            Wavelength <span>{w1.toFixed(2)} mm</span>
+            Wavelength <span>{formatLateral(w1, unit)}</span>
             <input type="range" min={0.2} max={5} step={0.05} value={w1}
               onChange={(e) => setW1(Number(e.target.value))} />
           </label>
@@ -132,12 +135,12 @@ export function WaveSum() {
         <fieldset>
           <legend>Wave #2</legend>
           <label>
-            Amplitude <span>{a2.toFixed(2)} µm</span>
+            Amplitude <span>{formatLength(a2, unit)}</span>
             <input type="range" min={0.05} max={1} step={0.01} value={a2}
               onChange={(e) => setA2(Number(e.target.value))} />
           </label>
           <label>
-            Wavelength <span>{w2.toFixed(2)} mm</span>
+            Wavelength <span>{formatLateral(w2, unit)}</span>
             <input type="range" min={0.2} max={5} step={0.05} value={w2}
               onChange={(e) => setW2(Number(e.target.value))} />
           </label>
