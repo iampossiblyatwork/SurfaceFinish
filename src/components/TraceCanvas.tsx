@@ -84,16 +84,6 @@ export function TraceCanvas({
         ctx.stroke();
       }
 
-      // Mean line.
-      ctx.strokeStyle = mid;
-      ctx.setLineDash(detailed ? [4, 4] : []);
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(padX, midY);
-      ctx.lineTo(padX + plotW, midY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
       // The trace.
       ctx.strokeStyle = line;
       ctx.lineWidth = detailed ? 1.5 : 1;
@@ -106,6 +96,16 @@ export function TraceCanvas({
         else ctx.lineTo(x, y);
       }
       ctx.stroke();
+
+      // Mean line drawn on top of the trace so it stays visible.
+      ctx.strokeStyle = mid;
+      ctx.setLineDash(detailed ? [5, 4] : []);
+      ctx.lineWidth = detailed ? 1.5 : 1;
+      ctx.beginPath();
+      ctx.moveTo(padX, midY);
+      ctx.lineTo(padX + plotW, midY);
+      ctx.stroke();
+      ctx.setLineDash([]);
     };
 
     draw();

@@ -664,6 +664,51 @@ input[type="range"] {
   color: var(--accent);
 }
 
+/* ---- ISO 1302 callout symbol diagrams ---- */
+.tex-sym-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 12px 0 18px;
+}
+.tex-sym-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 160px;
+}
+.tex-sym-item figcaption {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.4;
+}
+.tex-sym-base {
+  width: 80px;
+  height: 86px;
+  flex-shrink: 0;
+}
+.tex-sym-filled {
+  width: 180px;
+  height: auto;
+  flex-shrink: 0;
+}
+.tex-sym-annotated-wrap {
+  margin: 12px 0 20px;
+}
+.tex-sym-annotated {
+  width: 100%;
+  max-width: 500px;
+  display: block;
+}
+.tex-sym-cap {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
 /* ---- Wave-sum demo ---- */
 .wave-sum {
   background: var(--surface);
