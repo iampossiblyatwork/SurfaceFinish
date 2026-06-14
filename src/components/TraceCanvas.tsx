@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { Profile } from "../lib/roughness";
+import type { Profile } from "../api/client";
 
 interface TraceCanvasProps {
   profile: Profile;

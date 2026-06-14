@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { TraceCanvas } from "./TraceCanvas";
 import { useUnits } from "../context/UnitsContext";
-import { generateProfile } from "../lib/profile";
+import { api, type Profile } from "../api/client";
 import { formatLength, nearestGrade } from "../lib/grades";
 import type { Finish } from "../data/finishes";
 
@@ -12,10 +12,15 @@ interface FinishCardProps {
 
 export function FinishCard({ finish, onOpen }: FinishCardProps) {
   const { unit } = useUnits();
-  const profile = useMemo(
-    () => generateProfile(finish.defaultRa, finish.genParams, 1),
-    [finish],
-  );
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    api
+      .generateTrace(finish.id, finish.defaultRa, 1)
+      .then((data) => setProfile(data.profile))
+      .catch(() => {/* silently skip thumbnail on error */});
+  }, [finish.id, finish.defaultRa]);
+
   const gradeLo = nearestGrade(finish.raMin).grade;
   const gradeHi = nearestGrade(finish.raMax).grade;
 
@@ -31,11 +36,15 @@ export function FinishCard({ finish, onOpen }: FinishCardProps) {
           {gradeLo === gradeHi ? gradeLo : `${gradeLo}–${gradeHi}`}
         </span>
       </div>
-      <TraceCanvas
-        profile={profile}
-        height={70}
-        ariaLabel={`${finish.process} example trace`}
-      />
+      {profile ? (
+        <TraceCanvas
+          profile={profile}
+          height={70}
+          ariaLabel={`${finish.process} example trace`}
+        />
+      ) : (
+        <div className="trace-skeleton" style={{ height: 70 }} />
+      )}
       <div className="finish-card-meta">
         <span className="finish-card-family">{finish.family}</span>
         <span className="finish-card-ra">

@@ -1,18 +1,18 @@
 import { TraceCanvas } from "./TraceCanvas";
 import { useUnits } from "../context/UnitsContext";
-import { FINISHES } from "../data/finishes";
-import { PARAMETERS } from "../data/parameters";
+import type { FinishSummary } from "../api/client";
+import type { ParameterDef } from "../data/parameters";
 import { formatParameterValue } from "../lib/displayValue";
 import { formatLength, fromMicrons, nearestGrade, unitLabel } from "../lib/grades";
 import type { TraceState } from "../hooks/useTrace";
 
 const SLIDER_STEPS = 1000;
 
-/** Map a slider position [0,1000] to Ra (µm) on a log scale within the range. */
 function sliderToRa(pos: number, raMin: number, raMax: number): number {
   const t = pos / SLIDER_STEPS;
   return raMin * Math.pow(raMax / raMin, t);
 }
+
 function raToSlider(ra: number, raMin: number, raMax: number): number {
   const t = Math.log(ra / raMin) / Math.log(raMax / raMin);
   return Math.round(Math.min(1, Math.max(0, t)) * SLIDER_STEPS);
@@ -20,15 +20,34 @@ function raToSlider(ra: number, raMin: number, raMax: number): number {
 
 interface TracePanelProps {
   trace: TraceState;
-  /** Hide the per-parameter readout grid (used in compact compare layout). */
+  finishes: FinishSummary[];
+  parameters?: ParameterDef[];
   showParameters?: boolean;
 }
 
-export function TracePanel({ trace, showParameters = true }: TracePanelProps) {
+export function TracePanel({
+  trace,
+  finishes,
+  parameters = [],
+  showParameters = true,
+}: TracePanelProps) {
   const { unit } = useUnits();
-  const { finish, finishId, selectFinish, targetRa, setTargetRa, regenerate, profile, params } =
-    trace;
-  const grade = nearestGrade(params.Ra);
+  const {
+    finish,
+    finishId,
+    selectFinish,
+    targetRa,
+    setTargetRa,
+    regenerate,
+    profile,
+    params,
+    grade,
+    loading,
+  } = trace;
+
+  const raMin = finish?.raMin ?? 0.025;
+  const raMax = finish?.raMax ?? 50;
+  const displayGrade = params ? nearestGrade(params.Ra).grade : grade;
 
   return (
     <div className="trace-panel">
@@ -36,9 +55,9 @@ export function TracePanel({ trace, showParameters = true }: TracePanelProps) {
         <span className="field-label">Process</span>
         <select
           value={finishId}
-          onChange={(e) => selectFinish(e.target.value)}
+          onChange={(e) => selectFinish(e.target.value, finishes)}
         >
-          {FINISHES.map((f) => (
+          {finishes.map((f) => (
             <option key={f.id} value={f.id}>
               {f.process}
             </option>
@@ -46,37 +65,43 @@ export function TracePanel({ trace, showParameters = true }: TracePanelProps) {
         </select>
       </label>
 
-      <TraceCanvas
-        profile={profile}
-        detailed
-        height={170}
-        ariaLabel={`${finish.process} surface trace at Ra ${formatLength(params.Ra, unit)}`}
-      />
+      <div className={`trace-canvas-wrap${loading ? " loading" : ""}`}>
+        {profile ? (
+          <TraceCanvas
+            profile={profile}
+            detailed
+            height={170}
+            ariaLabel={`${finish?.process ?? ""} surface trace at Ra ${formatLength(params?.Ra ?? targetRa, unit)}`}
+          />
+        ) : (
+          <div className="trace-skeleton" style={{ height: 170 }} />
+        )}
+      </div>
 
       <div className="trace-readout-top">
         <div className="big-ra">
-          <span className="big-ra-value">{formatLength(params.Ra, unit)}</span>
+          <span className="big-ra-value">
+            {params ? formatLength(params.Ra, unit) : "—"}
+          </span>
           <span className="big-ra-label">Ra</span>
         </div>
         <div className="grade-badge" title="Nearest ISO 1302 grade">
-          {grade.grade}
+          {displayGrade}
         </div>
       </div>
 
       <label className="field">
         <span className="field-label">
-          Target Ra — range {formatLength(finish.raMin, unit)} to{" "}
-          {formatLength(finish.raMax, unit)}
+          Target Ra — range {formatLength(raMin, unit)} to{" "}
+          {formatLength(raMax, unit)}
         </span>
         <input
           type="range"
           min={0}
           max={SLIDER_STEPS}
-          value={raToSlider(targetRa, finish.raMin, finish.raMax)}
+          value={raToSlider(targetRa, raMin, raMax)}
           onChange={(e) =>
-            setTargetRa(
-              sliderToRa(Number(e.target.value), finish.raMin, finish.raMax),
-            )
+            setTargetRa(sliderToRa(Number(e.target.value), raMin, raMax))
           }
         />
       </label>
@@ -86,8 +111,8 @@ export function TracePanel({ trace, showParameters = true }: TracePanelProps) {
           className="ra-input"
           type="number"
           step="any"
-          min={fromMicrons(finish.raMin, unit)}
-          max={fromMicrons(finish.raMax, unit)}
+          min={fromMicrons(raMin, unit)}
+          max={fromMicrons(raMax, unit)}
           value={Number(fromMicrons(targetRa, unit).toFixed(3))}
           onChange={(e) => {
             const v = Number(e.target.value);
@@ -103,14 +128,18 @@ export function TracePanel({ trace, showParameters = true }: TracePanelProps) {
         </button>
       </div>
 
-      {showParameters && (
+      {showParameters && params && parameters.length > 0 && (
         <div className="param-grid" aria-label="Computed parameters">
-          {PARAMETERS.map((p) => (
+          {parameters.map((p) => (
             <div className="param-cell" key={p.symbol}>
               <span className="param-symbol">{p.symbol}</span>
               <span className="param-value">
-                {p.key
-                  ? formatParameterValue(params[p.key], p.unitType, unit)
+                {p.key && p.key in params
+                  ? formatParameterValue(
+                      params[p.key as keyof typeof params] as number,
+                      p.unitType,
+                      unit,
+                    )
                   : "curve"}
               </span>
             </div>

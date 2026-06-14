@@ -7,3 +7,6 @@ dist-ssr
 coverage
 *.log
 *.tsbuildinfo
+__pycache__/
+*.py[cod]
+.pytest_cache/

@@ -2,43 +2,32 @@ import { useTrace } from "../hooks/useTrace";
 import { useUnits } from "../context/UnitsContext";
 import { TracePanel } from "./TracePanel";
 import { ParameterCard } from "./ParameterCard";
-import {
-  CATEGORY_LABELS,
-  PARAMETERS,
-  type ParameterCategory,
-} from "../data/parameters";
+import { CATEGORY_LABELS, CATEGORY_ORDER, type ParameterDef } from "../data/parameters";
 import { formatParameterValue } from "../lib/displayValue";
+import type { FinishSummary } from "../api/client";
 
-const CATEGORY_ORDER: ParameterCategory[] = [
-  "amplitude",
-  "spacing",
-  "hybrid",
-  "material-ratio",
-];
+interface ParameterDictionaryProps {
+  parameters: ParameterDef[];
+  finishes: FinishSummary[];
+}
 
-/**
- * The educational glossary. A live reference trace at the top drives the values
- * shown on each parameter card, so the definitions are grounded in a real
- * (synthesized) surface the user can change.
- */
-export function ParameterDictionary() {
-  const trace = useTrace();
+export function ParameterDictionary({ parameters, finishes }: ParameterDictionaryProps) {
+  const trace = useTrace(finishes[0]?.id, finishes[0]?.defaultRa);
   const { unit } = useUnits();
 
   return (
     <section className="view">
       <p className="view-intro">
         Every standard 2D (profile) roughness parameter, with its meaning and
-        formula. The values update live for the reference trace below — change
-        the process or Ra to see how each parameter reacts.
+        formula. Values update live as you change the reference trace below.
       </p>
 
       <div className="reference-trace">
-        <TracePanel trace={trace} showParameters={false} />
+        <TracePanel trace={trace} finishes={finishes} showParameters={false} />
       </div>
 
       {CATEGORY_ORDER.map((cat) => {
-        const items = PARAMETERS.filter((p) => p.category === cat);
+        const items = parameters.filter((p) => p.category === cat);
         if (items.length === 0) return null;
         return (
           <div key={cat} className="param-category">
@@ -49,9 +38,9 @@ export function ParameterDictionary() {
                   key={p.symbol}
                   def={p}
                   value={
-                    p.key
+                    p.key && trace.params && p.key in trace.params
                       ? formatParameterValue(
-                          trace.params[p.key],
+                          trace.params[p.key as keyof typeof trace.params] as number,
                           p.unitType,
                           unit,
                         )

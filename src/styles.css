@@ -424,6 +424,34 @@ input[type="range"] {
   font-size: 0.72rem;
 }
 
+/* ---- Loading skeleton ---- */
+.trace-skeleton {
+  background: var(--surface-3);
+  border-radius: 8px;
+  animation: pulse 1.4s ease-in-out infinite;
+  width: 100%;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.trace-canvas-wrap.loading canvas {
+  opacity: 0.4;
+}
+
+/* ---- Error screen ---- */
+.app-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px;
+  color: var(--muted);
+  text-align: center;
+  gap: 12px;
+}
+
 /* ---- Larger screens ---- */
 @media (min-width: 620px) {
   .finish-grid {
