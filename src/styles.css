@@ -413,6 +413,90 @@ input[type="range"] {
   line-height: 1.45;
   margin: 0 0 4px;
 }
+.param-viz-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  position: relative;
+  cursor: zoom-in;
+}
+.param-viz-btn .param-viz {
+  transition: border-color 0.15s ease;
+}
+.param-viz-btn:hover .param-viz,
+.param-viz-btn:focus-visible .param-viz {
+  border-color: var(--accent);
+}
+.param-viz-zoom {
+  position: absolute;
+  top: 14px;
+  right: 8px;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 5px;
+  pointer-events: none;
+}
+.param-viz-btn:hover .param-viz-zoom,
+.param-viz-btn:focus-visible .param-viz-zoom {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---- Expanded parameter-viz modal ---- */
+.viz-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.74);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.viz-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px 18px;
+  width: min(96vw, 1400px);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.viz-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.viz-modal-head .param-card-name {
+  flex: 1;
+}
+.viz-modal-close {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.viz-modal-close:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.viz-modal .param-viz {
+  margin-bottom: 12px;
+}
 .param-card-summary {
   margin: 8px 0 6px;
   font-size: 0.9rem;

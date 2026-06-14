@@ -32,6 +32,11 @@ export function vizCaption(key: string | null): string | null {
   return CAPTION[VIZ[key]];
 }
 
+/** Whether a given compute key has an annotated visual. */
+export function hasViz(key: string | null): boolean {
+  return !!(key && VIZ[key]);
+}
+
 function cssVar(name: string, fallback: string): string {
   return (
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() ||
@@ -42,9 +47,11 @@ function cssVar(name: string, fallback: string): string {
 interface ParameterVizProps {
   vizKey: string | null;
   profile: Profile | null;
+  /** Canvas height in CSS px (taller for the expanded modal view). */
+  height?: number;
 }
 
-export function ParameterViz({ vizKey, profile }: ParameterVizProps) {
+export function ParameterViz({ vizKey, profile, height = 96 }: ParameterVizProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const type = vizKey ? VIZ[vizKey] : undefined;
@@ -60,7 +67,7 @@ export function ParameterViz({ vizKey, profile }: ParameterVizProps) {
       if (!ctx) return;
       const dpr = window.devicePixelRatio || 1;
       const cssW = wrap.clientWidth || 300;
-      const cssH = 96;
+      const cssH = height;
       canvas.width = Math.round(cssW * dpr);
       canvas.height = Math.round(cssH * dpr);
       canvas.style.width = `${cssW}px`;
@@ -277,7 +284,7 @@ export function ParameterViz({ vizKey, profile }: ParameterVizProps) {
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [type, profile]);
+  }, [type, profile, height]);
 
   if (!type || !profile) return null;
 
