@@ -947,6 +947,36 @@ input[type="range"] {
 .chooser-verdict.warn {
   border-left-color: var(--accent);
 }
+.chooser-mode button {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+}
+.chooser-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+.chooser-steps button {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.chooser-steps button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.chooser-cur {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 600;
+}
 .chooser-table {
   margin-bottom: 0;
 }

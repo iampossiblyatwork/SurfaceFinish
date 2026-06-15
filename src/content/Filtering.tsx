@@ -203,10 +203,22 @@ export function FilteringChoosing() {
       <p>
         These charts are a starting point, not a verdict. The standard procedure
         is to measure, check which band your result lands in, and re-measure at
-        the indicated cutoff if you were in the wrong band. Try it — change the
-        cutoff and watch which band the resulting Ra lands in:
+        the indicated cutoff if you were in the wrong band. The tool below starts
+        deliberately too coarse — pick periodic or non-periodic, then{" "}
+        <strong>step the filter up or down until the result lands in its own
+        band</strong>. When it does, you've found a defensible filter for this
+        trace:
       </p>
       <CutoffChooserDemo />
+      <Callout label="Why this matters — the filter is rarely on the drawing">
+        Drawings almost never specify the cutoff — it's left to whoever runs the
+        gauge. That's a real problem, because a <em>shorter</em> cutoff removes
+        more of the profile as waviness and makes Ra read <strong>smaller</strong>.
+        An operator under pressure quickly learns that dialing down the filter
+        makes borderline parts &ldquo;pass.&rdquo; The iterate-to-converge method
+        is the defensible answer: it ties the filter to the surface itself, not to
+        the number you were hoping to see.
+      </Callout>
       <Callout label="Worked example">
         A polished surface measures Ra&nbsp;{formatLength(0.08, unit)} at
         a {formatLateral(0.8, unit)} cutoff.

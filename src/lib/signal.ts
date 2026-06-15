@@ -95,6 +95,37 @@ export function ra(z: number[]): number {
 }
 
 /**
+ * RSm — mean width of profile elements (mm). Element boundaries are upward
+ * mean-line crossings, with height discrimination (a real peak above ~10% of
+ * the max must occur between boundaries) so fine noise doesn't spawn spurious
+ * elements. Returns 0 if fewer than two elements are found.
+ */
+export function rsm(z: number[], dx: number): number {
+  const n = z.length;
+  let maxAbs = 0;
+  for (const v of z) maxAbs = Math.max(maxAbs, Math.abs(v));
+  if (maxAbs === 0) return 0;
+  const thr = maxAbs * 0.1;
+  const bounds: number[] = [];
+  for (let i = 1; i < n; i++) {
+    if (z[i - 1] <= 0 && z[i] > 0) {
+      if (bounds.length === 0) {
+        bounds.push(i);
+        continue;
+      }
+      const last = bounds[bounds.length - 1];
+      let pk = 0;
+      for (let j = last; j <= i; j++) pk = Math.max(pk, z[j]);
+      if (pk > thr) bounds.push(i);
+    }
+  }
+  if (bounds.length < 2) return 0;
+  const meanSamples =
+    (bounds[bounds.length - 1] - bounds[0]) / (bounds.length - 1);
+  return meanSamples * dx;
+}
+
+/**
  * Low-pass (waviness) transmission of a single wavelength through the Gaussian
  * filter. Crosses 0.5 exactly at λ = λc. High-pass = 1 − this.
  */
