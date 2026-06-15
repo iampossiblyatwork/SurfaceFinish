@@ -4,7 +4,7 @@ import type { Profile } from "../api/client";
 /** Which annotation style each parameter uses, keyed by its compute key. */
 const VIZ: Record<string, string> = {
   Ra: "area",
-  Rq: "area",
+  Rq: "rmsCompare",
   Rp: "peak",
   Rv: "valley",
   Rt: "span",
@@ -18,6 +18,7 @@ const VIZ: Record<string, string> = {
 
 const CAPTION: Record<string, string> = {
   area: "Negative dips flipped up to |z|; the average level of the rectified profile is the parameter.",
+  rmsCompare: "Every row has the SAME Ra, yet a different Rq — RMS weights tall peaks and deep valleys more, so spikier surfaces read higher.",
   peak: "Marks the highest peak above the mean line.",
   valley: "Marks the deepest valley below the mean line.",
   span: "Total height: highest peak to lowest valley.",
@@ -72,6 +73,100 @@ function vizProfile(): number[] {
   return z;
 }
 
+// ─── Rq comparison set ───────────────────────────────────────────────────────
+// Three profiles that share an identical Ra but have rising Rq, to show that the
+// RMS weights tall peaks / deep valleys more than the arithmetic mean does.
+
+interface RqRow {
+  z: number[];
+  rq: number; // Rq/Ra ratio (since each row is normalised to Ra = 1)
+  label: string;
+}
+
+/** Mean-remove, then scale so the arithmetic mean of |z| (Ra) equals 1. */
+function normalizeToRa1(z: number[], label: string): RqRow {
+  const n = z.length;
+  let m = 0;
+  for (const v of z) m += v;
+  m /= n;
+  for (let i = 0; i < n; i++) z[i] -= m;
+  let ra = 0;
+  for (const v of z) ra += Math.abs(v);
+  ra /= n;
+  if (ra > 0) for (let i = 0; i < n; i++) z[i] /= ra;
+  let sq = 0;
+  for (const v of z) sq += v * v;
+  return { z, rq: Math.sqrt(sq / n), label };
+}
+
+function addSpikes(
+  z: number[],
+  base: number,
+  baseFreq: number,
+  spikes: Array<[number, number, number]>,
+  seed: number,
+): number[] {
+  const n = z.length;
+  let s = seed;
+  const rnd = () => {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    return s / 0x7fffffff;
+  };
+  for (let i = 0; i < n; i++) {
+    const x = i / n;
+    let v = base * Math.sin(2 * Math.PI * baseFreq * x);
+    for (const [p, a, w] of spikes) {
+      const d = (x - p) / w;
+      v += a * Math.exp(-d * d);
+    }
+    v += (rnd() - 0.5) * 0.06;
+    z[i] = v;
+  }
+  return z;
+}
+
+function rqCompareSet(): RqRow[] {
+  const n = 300;
+  // Smooth: a gentle wave — the lowest Rq/Ra (a pure sine gives ≈ 1.11).
+  const smooth = new Array<number>(n);
+  for (let i = 0; i < n; i++) {
+    const x = i / n;
+    smooth[i] =
+      Math.sin(2 * Math.PI * 4 * x) + 0.1 * Math.sin(2 * Math.PI * 9 * x + 1);
+  }
+  // Moderate: a few rounded peaks on a smaller wave.
+  const moderate = addSpikes(
+    new Array<number>(n),
+    0.55,
+    4,
+    [
+      [0.18, 1.1, 0.03],
+      [0.5, -1.0, 0.032],
+      [0.82, 1.05, 0.03],
+    ],
+    7,
+  );
+  // Spiky: small base plus sharp tall spikes and deep valleys — highest Rq/Ra.
+  const spiky = addSpikes(
+    new Array<number>(n),
+    0.18,
+    6,
+    [
+      [0.12, 2.1, 0.015],
+      [0.32, -2.0, 0.016],
+      [0.54, 2.3, 0.014],
+      [0.74, -2.0, 0.015],
+      [0.9, 2.0, 0.015],
+    ],
+    13,
+  );
+  return [
+    normalizeToRa1(smooth, "smooth"),
+    normalizeToRa1(moderate, "some peaks"),
+    normalizeToRa1(spiky, "spiky"),
+  ];
+}
+
 interface ParameterVizProps {
   vizKey: string | null;
   profile: Profile | null;
@@ -124,6 +219,71 @@ export function ParameterViz({
 
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, cssW, cssH);
+
+      if (type === "rmsCompare") {
+        // Same Ra in every row, different Rq. Shared vertical scale + common ±Ra
+        // reference lines anchor the equal-Ra fact; taller peaks ⇒ larger Rq.
+        const amber = "#e3a857";
+        const rowColors = [accent, good, amber];
+        const padC = 8;
+        const plotWC = cssW - padC * 2;
+        const plotHC = cssH - padC * 2;
+        const set = expanded ? rqCompareSet() : [rqCompareSet()[0], rqCompareSet()[2]];
+        const rows = set.length;
+        let maxPeak = 0;
+        for (const r of set) for (const v of r.z) maxPeak = Math.max(maxPeak, Math.abs(v));
+        if (maxPeak === 0) maxPeak = 1;
+        const rowH = plotHC / rows;
+        const labelSpace = expanded ? 16 : 0;
+        const sc = (rowH / 2 - 6 - labelSpace) / (maxPeak * 1.05);
+
+        set.forEach((r, ri) => {
+          const m = r.z.length;
+          const midY = padC + rowH * (ri + 0.5) + labelSpace / 2;
+          // ±Ra reference lines (identical offset in every row).
+          ctx.strokeStyle = muted;
+          ctx.globalAlpha = 0.5;
+          ctx.setLineDash([3, 3]);
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(padC, midY - sc);
+          ctx.lineTo(padC + plotWC, midY - sc);
+          ctx.moveTo(padC, midY + sc);
+          ctx.lineTo(padC + plotWC, midY + sc);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.globalAlpha = 1;
+          // Profile.
+          const col = rowColors[ri % rowColors.length];
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 1.4;
+          ctx.lineJoin = "round";
+          ctx.beginPath();
+          for (let i = 0; i < m; i++) {
+            const x = padC + (plotWC * i) / (m - 1);
+            const y = midY - r.z[i] * sc;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+          // Label.
+          if (expanded) {
+            ctx.fillStyle = col;
+            ctx.font = "12px system-ui, sans-serif";
+            ctx.fillText(
+              `Rq = ${r.rq.toFixed(2)} × Ra  (${r.label})`,
+              padC + 4,
+              padC + rowH * ri + 12,
+            );
+          }
+        });
+
+        // "same Ra" annotation on the reference lines (first row).
+        ctx.fillStyle = muted;
+        ctx.font = "11px system-ui, sans-serif";
+        ctx.fillText("± Ra (same in every row)", padC + plotWC - 150, padC + rowH - 4);
+        return;
+      }
 
       // Geometric annotations (area, peaks, spacing, segments, slope, span) are
       // drawn on a clean idealized profile so the mechanism is legible — a few
