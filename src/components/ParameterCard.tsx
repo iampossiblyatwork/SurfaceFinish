@@ -47,7 +47,7 @@ export function ParameterCard({ def, value, profile }: ParameterCardProps) {
             onClick={() => setOpen(true)}
             aria-label={`Expand the ${def.name} diagram`}
           >
-            <ParameterViz vizKey={def.key} profile={profile} />
+            <ParameterViz vizKey={def.key} profile={profile} symbol={def.symbol} />
             <span className="param-viz-zoom" aria-hidden="true">⤢</span>
           </button>
           {caption && <p className="param-viz-caption">{caption}</p>}
@@ -83,7 +83,7 @@ export function ParameterCard({ def, value, profile }: ParameterCardProps) {
                   ×
                 </button>
               </header>
-              <ParameterViz vizKey={def.key} profile={profile} expanded />
+              <ParameterViz vizKey={def.key} profile={profile} symbol={def.symbol} expanded />
               {caption && <p className="param-viz-caption">{caption}</p>}
               <p className="param-card-meaning">{def.meaning}</p>
               <code className="param-card-formula">{def.formula}</code>

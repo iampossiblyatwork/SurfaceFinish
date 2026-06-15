@@ -17,13 +17,13 @@ const VIZ: Record<string, string> = {
 };
 
 const CAPTION: Record<string, string> = {
-  area: "Shaded = deviations from the mean line that get averaged.",
+  area: "Negative dips flipped up to |z|; the average level of the rectified profile is the parameter.",
   peak: "Marks the highest peak above the mean line.",
   valley: "Marks the deepest valley below the mean line.",
   span: "Total height: highest peak to lowest valley.",
   segments: "Peak + valley found in each of 5 sampling lengths, then averaged.",
   spacing: "Spacing between successive profile elements (mean-line crossings).",
-  hist: "Distribution of profile heights — its shape is the parameter.",
+  hist: "Heights collected into their distribution (right) — its lean is skewness, its peakedness is kurtosis.",
   slope: "Local slope at each point; the parameter is their RMS.",
 };
 
@@ -75,6 +75,8 @@ function vizProfile(): number[] {
 interface ParameterVizProps {
   vizKey: string | null;
   profile: Profile | null;
+  /** Parameter symbol (e.g. "Ra", "Rq") — used to label the average level. */
+  symbol?: string;
   /** Fixed canvas height in CSS px (inline thumbnail). */
   height?: number;
   /** Expanded view: derive a natural height from the width so it never stretches. */
@@ -84,6 +86,7 @@ interface ParameterVizProps {
 export function ParameterViz({
   vizKey,
   profile,
+  symbol,
   height = 96,
   expanded = false,
 }: ParameterVizProps) {
@@ -168,19 +171,60 @@ export function ParameterViz({
       };
 
       if (type === "area") {
-        // Shaded deviation area between the profile and the mean line — the
-        // region that gets averaged (KLA deck style).
+        // Ra = the mean of |z|: flip every negative excursion up to the positive
+        // side, then the average level of that rectified profile is Ra. (Rq is
+        // the RMS of the same magnitudes — a slightly higher level.)
+        let mAbs = 0;
+        let mSq = 0;
+        for (const v of z) {
+          mAbs += Math.abs(v);
+          mSq += v * v;
+        }
+        mAbs /= n;
+        const level = symbol === "Rq" ? Math.sqrt(mSq / n) : mAbs;
+
+        // Faint original profile, so the negative dips (before flipping) show.
+        drawTrace(muted, 1);
+
+        // Rectified profile |z| above the mean line, shaded — the area averaged.
         ctx.beginPath();
         ctx.moveTo(xOf(0), mid);
-        for (let i = 0; i < n; i++) ctx.lineTo(xOf(i), yOf(z[i]));
+        for (let i = 0; i < n; i++) ctx.lineTo(xOf(i), mid - Math.abs(z[i]) * scale);
         ctx.lineTo(xOf(n - 1), mid);
         ctx.closePath();
         ctx.fillStyle = good;
-        ctx.globalAlpha = 0.32;
+        ctx.globalAlpha = 0.3;
         ctx.fill();
         ctx.globalAlpha = 1;
+        ctx.strokeStyle = good;
+        ctx.lineWidth = 1.6;
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        for (let i = 0; i < n; i++) {
+          const x = xOf(i);
+          const y = mid - Math.abs(z[i]) * scale;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
         drawMean();
-        drawTrace();
+
+        // The average level — this line is the parameter.
+        const yLevel = mid - level * scale;
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(pad, yLevel);
+        ctx.lineTo(pad + plotW, yLevel);
+        ctx.stroke();
+        ctx.fillStyle = accent;
+        ctx.font = "11px system-ui, sans-serif";
+        ctx.fillText(
+          symbol === "Rq" ? "RMS of |z| = Rq" : "mean of |z| = Ra",
+          pad + 4,
+          yLevel - 4,
+        );
       } else if (type === "peak" || type === "valley") {
         drawMean();
         drawTrace();
@@ -311,29 +355,91 @@ export function ParameterViz({
         }
         ctx.globalAlpha = 1;
       } else if (type === "hist") {
-        const bins = 24;
-        const counts = new Array(bins).fill(0);
-        for (const v of z) {
-          let b = Math.floor(((v / maxAbs + 1) / 2) * bins);
-          b = Math.max(0, Math.min(bins - 1, b));
-          counts[b]++;
-        }
-        const maxC = Math.max(...counts, 1);
-        const bw = plotW / bins;
-        ctx.fillStyle = accent;
-        for (let b = 0; b < bins; b++) {
-          const h = (counts[b] / maxC) * (plotH - 6);
-          ctx.fillRect(pad + b * bw + 1, pad + plotH - h, bw - 2, h);
-        }
-        // center line (mean height)
+        // Profile on the left; its amplitude distribution (the probability
+        // density of heights) on the right, sharing the height axis. Skewness is
+        // the lean of that distribution; kurtosis is its peakedness.
+        const splitX = pad + plotW * 0.62;
+        const profW = splitX - pad - 4;
+        const xOfL = (i: number) => pad + (profW * i) / (n - 1);
+
+        // Shared mean line.
         ctx.strokeStyle = muted;
         ctx.setLineDash([4, 3]);
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(pad + plotW / 2, pad);
-        ctx.lineTo(pad + plotW / 2, pad + plotH);
+        ctx.moveTo(pad, mid);
+        ctx.lineTo(pad + plotW, mid);
         ctx.stroke();
         ctx.setLineDash([]);
+
+        // Profile (left).
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 1.2;
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        for (let i = 0; i < n; i++) {
+          const x = xOfL(i);
+          const y = mid - z[i] * scale;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Divider.
+        ctx.strokeStyle = grid;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(splitX, pad);
+        ctx.lineTo(splitX, pad + plotH);
+        ctx.stroke();
+
+        // Amplitude distribution (right), height on the y-axis.
+        const bins = 48;
+        const span = maxAbs * 1.08;
+        const counts = new Array(bins).fill(0);
+        for (const v of z) {
+          let b = Math.floor(((v / span + 1) / 2) * bins);
+          b = Math.max(0, Math.min(bins - 1, b));
+          counts[b]++;
+        }
+        const sm = counts.map((_, b) => {
+          let s = 0;
+          let c = 0;
+          for (let k = -2; k <= 2; k++) {
+            const j = b + k;
+            if (j >= 0 && j < bins) {
+              s += counts[j];
+              c++;
+            }
+          }
+          return s / c;
+        });
+        const maxC = Math.max(...sm, 1);
+        const distW = pad + plotW - splitX - 4;
+        const hAt = (b: number) => (((b + 0.5) / bins) * 2 - 1) * span;
+        const xAt = (b: number) => splitX + (sm[b] / maxC) * distW;
+
+        // Filled area.
+        ctx.beginPath();
+        ctx.moveTo(splitX, mid - hAt(0) * scale);
+        for (let b = 0; b < bins; b++) ctx.lineTo(xAt(b), mid - hAt(b) * scale);
+        ctx.lineTo(splitX, mid - hAt(bins - 1) * scale);
+        ctx.closePath();
+        ctx.fillStyle = accent;
+        ctx.globalAlpha = 0.3;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        // Outline.
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        for (let b = 0; b < bins; b++) {
+          const x = xAt(b);
+          const y = mid - hAt(b) * scale;
+          if (b === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
       } else if (type === "slope") {
         drawMean();
         drawTrace(accent, 1.1);
@@ -359,7 +465,7 @@ export function ParameterViz({
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [type, profile, height, expanded]);
+  }, [type, profile, symbol, height, expanded]);
 
   if (!type || !profile) return null;
 
