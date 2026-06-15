@@ -881,6 +881,15 @@ input[type="range"] {
   flex-wrap: wrap;
   gap: 16px 22px;
 }
+.areal-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px 0 4px;
+}
+.areal-controls .field {
+  gap: 4px;
+}
 .filter-demo-readout > div {
   display: flex;
   flex-direction: column;

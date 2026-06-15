@@ -2,15 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useUnits } from "../context/UnitsContext";
 import { formatLength } from "../lib/grades";
 
-// Client-side areal (3D) surface synthesizer + pseudo-3D renderer. Illustrative,
-// like the filtering demos — it shows how areal S-parameters relate to a whole
-// measured patch rather than a single 2D line.
+// Client-side areal (3D) surface synthesizer + pseudo-3D renderer. Driven by
+// user inputs (lay, roughness, groove spacing, cross-hatch angle) rather than a
+// purely random shape, so it teaches how the controls map to S-parameters.
 
-type Lay = "uni" | "iso";
+type Lay = "uni" | "cross" | "iso";
 
-const NX = 56;
-const NY = 56;
-const TARGET_SA = 0.8; // µm — scale every surface to a tidy default
+const NX = 64;
+const NY = 64;
+const GROOVE_WIDTH = 0.1; // groove line width as a fraction of the spacing
 
 function mulberry32(seed: number): () => number {
   let a = seed;
@@ -49,25 +49,27 @@ function turbo(t: number): [number, number, number] {
   return TURBO[TURBO.length - 1][1];
 }
 
-/** Build a mean-removed height grid (µm), scaled so Sa ≈ TARGET_SA. */
-function makeHeightmap(lay: Lay, seed: number): number[][] {
-  const rng = mulberry32(seed * 2654435761);
+/** A narrow valley line: ~1 on a groove, ~0 on the plateau between grooves. */
+function groove(p: number, period: number): number {
+  const frac = ((p / period) % 1 + 1) % 1;
+  const d = Math.min(frac, 1 - frac) / GROOVE_WIDTH;
+  return Math.exp(-d * d);
+}
+
+interface GenOpts {
+  sa: number;
+  period: number;
+  angle: number;
+  seed: number;
+}
+
+/** Build a mean-removed height grid (µm), scaled so Sa ≈ opts.sa. */
+function makeHeightmap(lay: Lay, opts: GenOpts): number[][] {
+  const rng = mulberry32((opts.seed + 1) * 2654435761);
   const H: number[][] = Array.from({ length: NY }, () => new Array(NX).fill(0));
 
-  if (lay === "uni") {
-    // Unidirectional lay (turning / grinding): periodic ridges across columns.
-    const period = NX / 7;
-    const rowPhase = Array.from({ length: NY }, () => rng() * 0.5);
-    for (let r = 0; r < NY; r++) {
-      for (let c = 0; c < NX; c++) {
-        H[r][c] =
-          Math.sin((2 * Math.PI * c) / period + rowPhase[r] * 0.3) +
-          0.18 * Math.sin((2 * Math.PI * c) / (period * 0.37) + r * 0.12) +
-          (rng() - 0.5) * 0.25;
-      }
-    }
-  } else {
-    // Isotropic lay (blasted / lapped): sum of random Gaussian bumps.
+  if (lay === "iso") {
+    // Isotropic lay (blasting / lapping): sum of random Gaussian bumps.
     const bumps = Array.from({ length: 40 }, () => ({
       x: rng() * NX,
       y: rng() * NY,
@@ -84,9 +86,28 @@ function makeHeightmap(lay: Lay, seed: number): number[][] {
         H[r][c] = v;
       }
     }
+  } else {
+    // Directional lays: flat plateau cut by groove lines (one set for
+    // unidirectional, two crossing sets for cross-hatch).
+    const th = lay === "cross" ? (opts.angle * Math.PI) / 360 : 0;
+    const cos = Math.cos(th);
+    const sin = Math.sin(th);
+    for (let r = 0; r < NY; r++) {
+      for (let c = 0; c < NX; c++) {
+        let g: number;
+        if (lay === "cross") {
+          const p1 = c * cos + r * sin;
+          const p2 = c * cos - r * sin;
+          g = Math.max(groove(p1, opts.period), groove(p2, opts.period));
+        } else {
+          g = groove(c, opts.period);
+        }
+        H[r][c] = -g + (rng() - 0.5) * 0.06;
+      }
+    }
   }
 
-  // Mean-remove.
+  // Mean-remove, then scale to the requested Sa.
   let mean = 0;
   for (let r = 0; r < NY; r++) for (let c = 0; c < NX; c++) mean += H[r][c];
   mean /= NX * NY;
@@ -97,7 +118,7 @@ function makeHeightmap(lay: Lay, seed: number): number[][] {
       saRaw += Math.abs(H[r][c]);
     }
   saRaw /= NX * NY;
-  const k = saRaw > 0 ? TARGET_SA / saRaw : 1;
+  const k = saRaw > 0 ? opts.sa / saRaw : 1;
   for (let r = 0; r < NY; r++) for (let c = 0; c < NX; c++) H[r][c] *= k;
   return H;
 }
@@ -146,10 +167,16 @@ function cssVar(name: string, fallback: string): string {
 
 export function ArealSurface() {
   const { unit } = useUnits();
-  const [lay, setLay] = useState<Lay>("uni");
-  const [seed, setSeed] = useState(3);
+  const [lay, setLay] = useState<Lay>("cross");
+  const [sa, setSa] = useState(0.4);
+  const [period, setPeriod] = useState(10);
+  const [angle, setAngle] = useState(50);
+  const [seed, setSeed] = useState(1);
 
-  const H = useMemo(() => makeHeightmap(lay, seed), [lay, seed]);
+  const H = useMemo(
+    () => makeHeightmap(lay, { sa, period, angle, seed }),
+    [lay, sa, period, angle, seed],
+  );
   const S = useMemo(() => sParams(H), [H]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -193,7 +220,6 @@ export function ArealSurface() {
       const lightY = -0.5;
       const lightZ = 0.76;
 
-      // Painter's algorithm: back rows (small r) first.
       for (let r = 0; r < NY - 1; r++) {
         for (let c = 0; c < NX - 1; c++) {
           const h00 = H[r][c];
@@ -235,65 +261,58 @@ export function ArealSurface() {
     return () => ro.disconnect();
   }, [H]);
 
+  const directional = lay !== "iso";
+
   return (
     <div className="filter-demo">
       <div ref={wrapRef} className="filter-demo-canvas">
-        <canvas
-          ref={canvasRef}
-          role="img"
-          aria-label={`Synthesized areal surface with ${lay === "uni" ? "unidirectional" : "isotropic"} lay`}
-        />
+        <canvas ref={canvasRef} role="img" aria-label={`Synthesized areal surface, ${lay} lay`} />
       </div>
 
       <div className="filter-demo-readout areal-readout">
-        <div>
-          <span className="fd-label">Sa</span>
-          <span className="fd-value">{formatLength(S.Sa, unit)}</span>
-        </div>
-        <div>
-          <span className="fd-label">Sq</span>
-          <span className="fd-value">{formatLength(S.Sq, unit)}</span>
-        </div>
-        <div>
-          <span className="fd-label">Sz</span>
-          <span className="fd-value">{formatLength(S.Sz, unit)}</span>
-        </div>
-        <div>
-          <span className="fd-label">Ssk</span>
-          <span className="fd-value">{S.Ssk.toFixed(2)}</span>
-        </div>
-        <div>
-          <span className="fd-label">Sku</span>
-          <span className="fd-value">{S.Sku.toFixed(2)}</span>
-        </div>
+        <div><span className="fd-label">Sa</span><span className="fd-value">{formatLength(S.Sa, unit)}</span></div>
+        <div><span className="fd-label">Sq</span><span className="fd-value">{formatLength(S.Sq, unit)}</span></div>
+        <div><span className="fd-label">Sz</span><span className="fd-value">{formatLength(S.Sz, unit)}</span></div>
+        <div><span className="fd-label">Ssk</span><span className="fd-value">{S.Ssk.toFixed(2)}</span></div>
+        <div><span className="fd-label">Sku</span><span className="fd-value">{S.Sku.toFixed(2)}</span></div>
       </div>
 
       <div className="filter-demo-presets">
-        <button
-          type="button"
-          className={lay === "uni" ? "active" : ""}
-          onClick={() => setLay("uni")}
-        >
-          Unidirectional lay
-        </button>
-        <button
-          type="button"
-          className={lay === "iso" ? "active" : ""}
-          onClick={() => setLay("iso")}
-        >
-          Isotropic lay
-        </button>
-        <button type="button" onClick={() => setSeed((s) => s + 1)}>
-          ↻ Regenerate
-        </button>
+        <button type="button" className={lay === "uni" ? "active" : ""} onClick={() => setLay("uni")}>Unidirectional</button>
+        <button type="button" className={lay === "cross" ? "active" : ""} onClick={() => setLay("cross")}>Cross-hatch</button>
+        <button type="button" className={lay === "iso" ? "active" : ""} onClick={() => setLay("iso")}>Isotropic</button>
+        <button type="button" onClick={() => setSeed((s) => s + 1)}>↻ New noise</button>
+      </div>
+
+      <div className="areal-controls">
+        <label className="field">
+          <span className="field-label">Roughness Sa — {formatLength(sa, unit)}</span>
+          <input type="range" min={0.1} max={2} step={0.05} value={sa}
+            onChange={(e) => setSa(Number(e.target.value))} />
+        </label>
+        {directional && (
+          <label className="field">
+            <span className="field-label">Groove spacing — {lay === "cross" ? "cross-hatch" : "feed"} pitch</span>
+            <input type="range" min={5} max={20} step={1} value={period}
+              onChange={(e) => setPeriod(Number(e.target.value))} />
+          </label>
+        )}
+        {lay === "cross" && (
+          <label className="field">
+            <span className="field-label">Cross-hatch angle — {angle}°</span>
+            <input type="range" min={20} max={70} step={2} value={angle}
+              onChange={(e) => setAngle(Number(e.target.value))} />
+          </label>
+        )}
       </div>
 
       <p className="filter-demo-caption">
         A synthesized areal patch, height mapped to color (blue = valleys, red =
-        peaks). The <strong>S-parameters</strong> above are computed across the
-        whole surface, not a single line — switch the lay or regenerate and watch
-        them respond. Unidirectional lay (turning, grinding) looks the same along
-        the grooves; isotropic lay (blasting, lapping) has no preferred direction.
+        peaks). The <strong>S-parameters</strong> above are computed over the
+        whole surface, not a single line. <strong>Cross-hatch</strong> is the
+        classic cylinder-liner honing pattern — a flat bearing plateau cut by two
+        sets of oil-retention grooves, which is why its <strong>Ssk is
+        negative</strong>. Drive the controls and watch the parameters respond.
       </p>
     </div>
   );
