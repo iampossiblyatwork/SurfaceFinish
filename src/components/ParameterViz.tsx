@@ -200,11 +200,14 @@ export function ParameterViz({
       if (!ctx) return;
       const dpr = window.devicePixelRatio || 1;
       const cssW = wrap.clientWidth || 300;
-      // Expanded: height tracks width (≈ 2× the width-capped amplitude + margin)
-      // so the trace fills the box at a natural aspect on phones and desktops.
-      const cssH = expanded
-        ? Math.round(Math.min(320, cssW * 0.24 + 56))
-        : height;
+      // Expanded: height tracks width so the trace fills the box at a natural
+      // aspect with generous amplitude. The Rq comparison stacks three rows, so
+      // it needs a taller box (especially on a narrow phone canvas).
+      const cssH = !expanded
+        ? height
+        : type === "rmsCompare"
+          ? Math.round(Math.min(380, Math.max(252, cssW * 0.5)))
+          : Math.round(Math.min(340, cssW * 0.34 + 52));
       canvas.width = Math.round(cssW * dpr);
       canvas.height = Math.round(cssH * dpr);
       canvas.style.width = `${cssW}px`;
@@ -230,19 +233,23 @@ export function ParameterViz({
         const plotHC = cssH - padC * 2;
         const set = expanded ? rqCompareSet() : [rqCompareSet()[0], rqCompareSet()[2]];
         const rows = set.length;
-        let maxPeak = 0;
-        for (const r of set) for (const v of r.z) maxPeak = Math.max(maxPeak, Math.abs(v));
-        if (maxPeak === 0) maxPeak = 1;
         const rowH = plotHC / rows;
-        const labelSpace = expanded ? 16 : 0;
-        const sc = (rowH / 2 - 6 - labelSpace) / (maxPeak * 1.05);
+        const rowHalf = rowH / 2 - 5;
+        // Scale to a reference peak so the gentle waves have real amplitude; the
+        // spiky peaks deliberately poke beyond and are clipped to their row.
+        const refPeak = 2.0;
+        const sc = rowHalf / refPeak;
 
         set.forEach((r, ri) => {
           const m = r.z.length;
-          const midY = padC + rowH * (ri + 0.5) + labelSpace / 2;
+          const midY = padC + rowH * (ri + 0.5);
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(padC, midY - rowH / 2 + 1, plotWC, rowH - 2);
+          ctx.clip();
           // ±Ra reference lines (identical offset in every row).
           ctx.strokeStyle = muted;
-          ctx.globalAlpha = 0.5;
+          ctx.globalAlpha = 0.6;
           ctx.setLineDash([3, 3]);
           ctx.lineWidth = 1;
           ctx.beginPath();
@@ -256,7 +263,7 @@ export function ParameterViz({
           // Profile.
           const col = rowColors[ri % rowColors.length];
           ctx.strokeStyle = col;
-          ctx.lineWidth = 1.4;
+          ctx.lineWidth = 1.6;
           ctx.lineJoin = "round";
           ctx.beginPath();
           for (let i = 0; i < m; i++) {
@@ -266,14 +273,15 @@ export function ParameterViz({
             else ctx.lineTo(x, y);
           }
           ctx.stroke();
-          // Label.
+          ctx.restore();
+          // Label overlaid in the row's top-left corner (no reserved space).
           if (expanded) {
             ctx.fillStyle = col;
-            ctx.font = "12px system-ui, sans-serif";
+            ctx.font = "bold 12px system-ui, sans-serif";
             ctx.fillText(
               `Rq = ${r.rq.toFixed(2)} × Ra  (${r.label})`,
               padC + 4,
-              padC + rowH * ri + 12,
+              padC + rowH * ri + 13,
             );
           }
         });
@@ -301,9 +309,9 @@ export function ParameterViz({
       let maxAbs = 0;
       for (const v of z) maxAbs = Math.max(maxAbs, Math.abs(v));
       if (maxAbs === 0) maxAbs = 1;
-      // Cap vertical amplitude relative to width so a tall canvas never stretches
-      // the trace into an unnatural, over-exaggerated waveform.
-      const ampPx = Math.min(plotH / 2 - 6, plotW * 0.11);
+      // Generous amplitude, but capped relative to width so a very wide canvas
+      // doesn't stretch the trace into an over-exaggerated waveform.
+      const ampPx = Math.min(plotH / 2 - 8, plotW * 0.17);
       const scale = ampPx / (maxAbs * 1.08);
       const xOf = (i: number) => pad + (plotW * i) / (n - 1);
       const yOf = (v: number) => mid - v * scale;
@@ -328,6 +336,33 @@ export function ParameterViz({
           else ctx.lineTo(xOf(i), yOf(z[i]));
         }
         ctx.stroke();
+      };
+
+      // Arrowhead with its tip at (x, y); dir −1 points up, +1 points down.
+      const arrow = (x: number, y: number, dir: number) => {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 3, y + dir * 7);
+        ctx.lineTo(x + 3, y + dir * 7);
+        ctx.closePath();
+        ctx.fill();
+      };
+      // Vertical dimension leader between yA and yB with outward arrowheads and a
+      // label — engineering-drawing style, matching the reference deck.
+      const dimV = (x: number, yA: number, yB: number, label: string, color: string) => {
+        const top = Math.min(yA, yB);
+        const bot = Math.max(yA, yB);
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(x, top + 1);
+        ctx.lineTo(x, bot - 1);
+        ctx.stroke();
+        arrow(x, top, -1);
+        arrow(x, bot, 1);
+        ctx.font = "bold 11px system-ui, sans-serif";
+        ctx.fillText(label, x + 5, (top + bot) / 2 + 4);
       };
 
       if (type === "area") {
@@ -393,16 +428,23 @@ export function ParameterViz({
           if (type === "peak" ? z[i] > z[idx] : z[i] < z[idx]) idx = i;
         }
         const x = xOf(idx);
-        ctx.strokeStyle = accent;
-        ctx.lineWidth = 2;
+        const yExt = yOf(z[idx]);
+        // Extension line from the mean line across to the peak/valley level.
+        ctx.strokeStyle = muted;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
         ctx.beginPath();
-        ctx.moveTo(x, mid);
-        ctx.lineTo(x, yOf(z[idx]));
+        ctx.moveTo(Math.max(pad, x - 26), yExt);
+        ctx.lineTo(Math.min(pad + plotW, x + 26), yExt);
         ctx.stroke();
+        ctx.setLineDash([]);
+        // Marker on the extreme point.
         ctx.fillStyle = accent;
         ctx.beginPath();
-        ctx.arc(x, yOf(z[idx]), 3.5, 0, Math.PI * 2);
+        ctx.arc(x, yExt, 3, 0, Math.PI * 2);
         ctx.fill();
+        // Dimension leader from the mean line to the peak/valley = Rp / Rv.
+        dimV(x, mid, yExt, symbol ?? (type === "peak" ? "Rp" : "Rv"), accent);
       } else if (type === "span") {
         drawTrace(muted, 1);
         let hi = 0;
@@ -450,14 +492,31 @@ export function ParameterViz({
             if (z[i] > z[hi]) hi = i;
             if (z[i] < z[lo]) lo = i;
           }
+          const yHi = yOf(z[hi]);
+          const yLo = yOf(z[lo]);
+          const segMid = pad + (xOf(a) - pad + (xOf(b - 1) - pad)) / 2;
+          // Extension lines from the actual peak/valley to the dimension line.
+          ctx.strokeStyle = muted;
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 2]);
+          ctx.beginPath();
+          ctx.moveTo(xOf(hi), yHi);
+          ctx.lineTo(segMid, yHi);
+          ctx.moveTo(xOf(lo), yLo);
+          ctx.lineTo(segMid, yLo);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          // Peak / valley markers.
           ctx.fillStyle = good;
           ctx.beginPath();
-          ctx.arc(xOf(hi), yOf(z[hi]), 2.6, 0, Math.PI * 2);
+          ctx.arc(xOf(hi), yHi, 2.6, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = accent;
           ctx.beginPath();
-          ctx.arc(xOf(lo), yOf(z[lo]), 2.6, 0, Math.PI * 2);
+          ctx.arc(xOf(lo), yLo, 2.6, 0, Math.PI * 2);
           ctx.fill();
+          // Peak-to-valley dimension leader = Rz of this sampling length.
+          dimV(segMid, yHi, yLo, `Z${s + 1}`, good);
         }
       } else if (type === "spacing") {
         // Element boundaries = upward mean-line crossings, with height and
