@@ -121,16 +121,16 @@ export function ParameterViz({ vizKey, profile, height = 96 }: ParameterVizProps
       };
 
       if (type === "area") {
-        // Vertical deviation lines between profile and mean.
-        ctx.strokeStyle = good;
-        ctx.globalAlpha = 0.5;
-        ctx.lineWidth = 1;
+        // Shaded deviation area between the profile and the mean line — the
+        // region that gets averaged (KLA deck style).
         ctx.beginPath();
-        for (let i = 0; i < n; i += 4) {
-          ctx.moveTo(xOf(i), mid);
-          ctx.lineTo(xOf(i), yOf(z[i]));
-        }
-        ctx.stroke();
+        ctx.moveTo(xOf(0), mid);
+        for (let i = 0; i < n; i++) ctx.lineTo(xOf(i), yOf(z[i]));
+        ctx.lineTo(xOf(n - 1), mid);
+        ctx.closePath();
+        ctx.fillStyle = good;
+        ctx.globalAlpha = 0.32;
+        ctx.fill();
         ctx.globalAlpha = 1;
         drawMean();
         drawTrace();
@@ -209,32 +209,60 @@ export function ParameterViz({ vizKey, profile, height = 96 }: ParameterVizProps
           ctx.fill();
         }
       } else if (type === "spacing") {
+        // Element boundaries = upward mean-line crossings, with height and
+        // spacing discrimination so noise doesn't spawn spurious tiny elements
+        // (this is how RSm itself ignores small peaks).
+        const thr = maxAbs * 0.15;
+        const minGap = plotW / 22;
+        const raw: number[] = [];
+        for (let i = 1; i < n; i++) {
+          if (z[i - 1] <= 0 && z[i] > 0) raw.push(i);
+        }
+        const bounds: number[] = [];
+        for (const c of raw) {
+          if (bounds.length === 0) {
+            bounds.push(c);
+            continue;
+          }
+          const last = bounds[bounds.length - 1];
+          let pk = 0;
+          for (let j = last; j <= c; j++) pk = Math.max(pk, z[j]);
+          if (pk > thr && xOf(c) - xOf(last) > minGap) bounds.push(c);
+        }
+
         drawMean();
         drawTrace(accent, 1.1);
-        // Upward mean-line crossings = element boundaries.
-        const crossings: number[] = [];
-        for (let i = 1; i < n; i++) {
-          if (z[i - 1] <= 0 && z[i] > 0) crossings.push(xOf(i));
-        }
-        ctx.strokeStyle = good;
-        ctx.fillStyle = good;
-        ctx.lineWidth = 1.5;
-        for (const cx of crossings) {
-          ctx.beginPath();
-          ctx.moveTo(cx, mid - 4);
-          ctx.lineTo(cx, mid + 4);
-          ctx.stroke();
-        }
-        // arrows between successive crossings
+
+        // Vertical dashed separators at each element boundary.
         ctx.strokeStyle = muted;
+        ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
-        for (let i = 0; i < crossings.length - 1; i++) {
-          const y = pad + 6;
+        for (const b of bounds) {
           ctx.beginPath();
-          ctx.moveTo(crossings[i], y);
-          ctx.lineTo(crossings[i + 1], y);
+          ctx.moveTo(xOf(b), pad);
+          ctx.lineTo(xOf(b), pad + plotH);
           ctx.stroke();
         }
+        ctx.setLineDash([]);
+
+        // Element-width bars (Smi) along the mean line, with end ticks;
+        // alternate brightness so neighbouring elements read distinctly.
+        ctx.strokeStyle = good;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < bounds.length - 1; i++) {
+          const x0 = xOf(bounds[i]);
+          const x1 = xOf(bounds[i + 1]);
+          ctx.globalAlpha = i % 2 === 0 ? 1 : 0.55;
+          ctx.beginPath();
+          ctx.moveTo(x0 + 1, mid);
+          ctx.lineTo(x1 - 1, mid);
+          ctx.moveTo(x0, mid - 4);
+          ctx.lineTo(x0, mid + 4);
+          ctx.moveTo(x1, mid - 4);
+          ctx.lineTo(x1, mid + 4);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
       } else if (type === "hist") {
         const bins = 24;
         const counts = new Array(bins).fill(0);
