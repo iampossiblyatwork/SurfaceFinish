@@ -83,7 +83,7 @@ export function ParameterCard({ def, value, profile }: ParameterCardProps) {
                   ×
                 </button>
               </header>
-              <ParameterViz vizKey={def.key} profile={profile} height={420} />
+              <ParameterViz vizKey={def.key} profile={profile} expanded />
               {caption && <p className="param-viz-caption">{caption}</p>}
               <p className="param-card-meaning">{def.meaning}</p>
               <code className="param-card-formula">{def.formula}</code>

@@ -44,14 +44,49 @@ function cssVar(name: string, fallback: string): string {
   );
 }
 
+/**
+ * A clean, deterministic teaching profile with a handful of well-spaced
+ * elements — designed so each parameter's annotation is legible (the dense live
+ * trace crams features too close to read). Used for all geometric vizzes.
+ */
+function vizProfile(): number[] {
+  const n = 300;
+  const z = new Array<number>(n);
+  let s = 12345;
+  const rnd = () => {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    return s / 0x7fffffff;
+  };
+  for (let i = 0; i < n; i++) {
+    const x = i / n;
+    z[i] =
+      Math.sin(2 * Math.PI * 5 * x + 0.3) +
+      0.42 * Math.sin(2 * Math.PI * 10.5 * x + 1.1) +
+      0.16 * Math.sin(2 * Math.PI * 17 * x + 2.0) +
+      (rnd() - 0.5) * 0.06;
+  }
+  let m = 0;
+  for (const v of z) m += v;
+  m /= n;
+  for (let i = 0; i < n; i++) z[i] -= m;
+  return z;
+}
+
 interface ParameterVizProps {
   vizKey: string | null;
   profile: Profile | null;
-  /** Canvas height in CSS px (taller for the expanded modal view). */
+  /** Fixed canvas height in CSS px (inline thumbnail). */
   height?: number;
+  /** Expanded view: derive a natural height from the width so it never stretches. */
+  expanded?: boolean;
 }
 
-export function ParameterViz({ vizKey, profile, height = 96 }: ParameterVizProps) {
+export function ParameterViz({
+  vizKey,
+  profile,
+  height = 96,
+  expanded = false,
+}: ParameterVizProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const type = vizKey ? VIZ[vizKey] : undefined;
@@ -67,7 +102,11 @@ export function ParameterViz({ vizKey, profile, height = 96 }: ParameterVizProps
       if (!ctx) return;
       const dpr = window.devicePixelRatio || 1;
       const cssW = wrap.clientWidth || 300;
-      const cssH = height;
+      // Expanded: height tracks width (≈ 2× the width-capped amplitude + margin)
+      // so the trace fills the box at a natural aspect on phones and desktops.
+      const cssH = expanded
+        ? Math.round(Math.min(320, cssW * 0.24 + 56))
+        : height;
       canvas.width = Math.round(cssW * dpr);
       canvas.height = Math.round(cssH * dpr);
       canvas.style.width = `${cssW}px`;
@@ -83,7 +122,12 @@ export function ParameterViz({ vizKey, profile, height = 96 }: ParameterVizProps
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, cssW, cssH);
 
-      const z = profile.z;
+      // Geometric annotations (area, peaks, spacing, segments, slope, span) are
+      // drawn on a clean idealized profile so the mechanism is legible — a few
+      // well-spaced elements rather than the dense live trace. The height
+      // distribution (hist) uses the real profile so skew/kurtosis reflect the
+      // actual finish.
+      const z = type === "hist" && profile ? profile.z : vizProfile();
       const n = z.length;
       if (n === 0) return;
       const pad = 6;
@@ -94,7 +138,10 @@ export function ParameterViz({ vizKey, profile, height = 96 }: ParameterVizProps
       let maxAbs = 0;
       for (const v of z) maxAbs = Math.max(maxAbs, Math.abs(v));
       if (maxAbs === 0) maxAbs = 1;
-      const scale = (plotH / 2 - 4) / (maxAbs * 1.08);
+      // Cap vertical amplitude relative to width so a tall canvas never stretches
+      // the trace into an unnatural, over-exaggerated waveform.
+      const ampPx = Math.min(plotH / 2 - 6, plotW * 0.11);
+      const scale = ampPx / (maxAbs * 1.08);
       const xOf = (i: number) => pad + (plotW * i) / (n - 1);
       const yOf = (v: number) => mid - v * scale;
 
@@ -312,7 +359,7 @@ export function ParameterViz({ vizKey, profile, height = 96 }: ParameterVizProps
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [type, profile, height]);
+  }, [type, profile, height, expanded]);
 
   if (!type || !profile) return null;
 
