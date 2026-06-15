@@ -2,11 +2,14 @@ import { Lesson, Callout } from "./Lesson";
 
 // ─── ISO 1302 surface texture symbol SVG components ──────────────────────────
 //
-// All diagrams share the same base geometry (viewBox 0 0 80 86):
-//   left-tip (4,44) → apex (18,76) → right-top (22,8) → shelf-end
+// Recreated (beautified) from the KLA reference deck. The symbol is a check /
+// tick: a short left leg drops to a V-vertex, a tall right leg rises to the
+// apex, and a horizontal shelf extends to the right from the apex.
 //
-// The left leg is shorter (~60° from horizontal); the right leg is taller
-// (~87°, nearly vertical). This matches the proportions in the standard.
+//   L (left tip) → V (vertex) → A (apex) → shelf
+//
+// "Material removal required" closes a triangle across the vertex; "removal
+// prohibited" inscribes a circle in the crook.
 
 const SS = {
   stroke: "currentColor",
@@ -16,103 +19,97 @@ const SS = {
   strokeLinejoin: "round" as const,
 };
 
+// Shared tick geometry for the small base symbols (viewBox 0 0 104 70).
+const TICK = "8,36 24,60 48,10";
+
 // One of the three base symbols at small size.
-function SmallSym({ variant, shelfEnd = 76 }: {
+function SmallSym({ variant, shelfEnd = 100 }: {
   variant: "basic" | "required" | "prohibited";
   shelfEnd?: number;
 }) {
   return (
-    <svg viewBox={`0 0 ${shelfEnd + 4} 86`} className="tex-sym-base">
-      <polyline points={`4,44 18,76 22,8 ${shelfEnd},8`} {...SS} />
+    <svg viewBox={`0 0 ${shelfEnd + 4} 70`} className="tex-sym-base">
+      <polyline points={`${TICK} ${shelfEnd},10`} {...SS} />
       {variant === "required" && (
-        // Short horizontal bar crossing the left leg at mid-height.
-        <line x1={6} y1={60} x2={30} y2={60} {...SS} />
+        // Bar closing the triangle across the vertex = material must be removed.
+        <line x1={8} y1={36} x2={35.5} y2={36} {...SS} />
       )}
       {variant === "prohibited" && (
-        // Small circle inside the angle of the symbol.
-        <circle cx={15} cy={58} r={9} {...SS} />
+        // Circle in the crook of the tick = material removal prohibited.
+        <circle cx={27} cy={43} r={8.5} {...SS} />
       )}
     </svg>
   );
 }
 
-// Large annotated diagram showing where fields a–e sit.
-// viewBox 0 0 290 190
+// Large annotated diagram showing where fields a–e sit (viewBox 0 0 330 200).
 function AnnotatedSym() {
   const ac = "var(--accent)";
   const go = "var(--good)";
   const mu = "var(--muted)";
   const font = "system-ui, sans-serif";
+  const leader = { stroke: mu, strokeWidth: 1.2 };
 
   return (
-    <svg viewBox="0 0 290 190" className="tex-sym-annotated">
-      {/* Main symbol body */}
-      <polyline points="7,108 28,176 33,38 283,38" {...SS} />
-      {/* Second horizontal line above the shelf (used when 'c' is specified) */}
-      <line x1={33} y1={18} x2={283} y2={18} {...SS} />
+    <svg viewBox="0 0 330 200" className="tex-sym-annotated">
+      {/* Main symbol body: short left leg → vertex → tall right leg → shelf */}
+      <polyline points="34,120 74,174 128,64 314,64" {...SS} />
 
-      {/* ── Zone labels ──────────────────────────────────────────── */}
-      {/* c — above the second line */}
-      <text x={40} y={6} fill={go} fontSize={11} dominantBaseline="hanging"
-        fontFamily={font} fontWeight="bold">c</text>
-      <text x={54} y={6} fill={go} fontSize={10} dominantBaseline="hanging"
-        fontFamily={font}>manufacturing method</text>
+      {/* leader ticks from each label to its zone */}
+      <line x1={150} y1={44} x2={138} y2={62} {...leader} />
+      <line x1={150} y1={92} x2={138} y2={70} {...leader} />
+      <line x1={163} y1={34} x2={155} y2={60} {...leader} />
+      <line x1={120} y1={122} x2={104} y2={86} {...leader} />
+      <line x1={26} y1={112} x2={34} y2={120} {...leader} />
 
-      {/* a — between the two lines */}
-      <text x={40} y={20} fill={ac} fontSize={11} dominantBaseline="hanging"
-        fontFamily={font} fontWeight="bold">a</text>
-      <text x={54} y={20} fill={ac} fontSize={10} dominantBaseline="hanging"
-        fontFamily={font}>upper parameter specification</text>
-
-      {/* b — below the shelf */}
-      <text x={40} y={42} fill={ac} fontSize={11} dominantBaseline="hanging"
-        fontFamily={font} fontWeight="bold">b</text>
-      <text x={54} y={42} fill={ac} fontSize={10} dominantBaseline="hanging"
-        fontFamily={font}>second specification (optional)</text>
-
-      {/* d — lay direction, sits below shelf near the right leg */}
-      <text x={36} y={57} fill={mu} fontSize={11} dominantBaseline="hanging"
-        fontFamily={font} fontWeight="bold">d</text>
-      <text x={50} y={57} fill={mu} fontSize={10} dominantBaseline="hanging"
-        fontFamily={font}>lay direction</text>
-
-      {/* e — machining allowance, on the left leg */}
-      {/* Left-leg midpoint: ~(17, 142). Label goes to the left. */}
-      <text x={2} y={132} fill={mu} fontSize={11} dominantBaseline="hanging"
-        fontFamily={font} fontWeight="bold">e</text>
-      {/* Tick line pointing to left leg */}
-      <line x1={10} y1={139} x2={18} y2={139} stroke={mu} strokeWidth={1.2} />
+      {/* c — manufacturing method (topmost) */}
+      <text x={150} y={30} fill={go} fontSize={20} fontWeight="bold"
+        textAnchor="middle" fontFamily={font}>c</text>
+      {/* a — upper / primary parameter specification (above the shelf) */}
+      <text x={150} y={56} fill={ac} fontSize={20} fontWeight="bold"
+        textAnchor="middle" fontFamily={font}>a</text>
+      {/* b — second specification (below the shelf) */}
+      <text x={150} y={104} fill={ac} fontSize={20} fontWeight="bold"
+        textAnchor="middle" fontFamily={font}>b</text>
+      {/* d — lay direction (below shelf, toward the leg) */}
+      <text x={118} y={140} fill={mu} fontSize={20} fontWeight="bold"
+        textAnchor="middle" fontFamily={font}>d</text>
+      {/* e — machining allowance (left-leg tip) */}
+      <text x={16} y={112} fill={mu} fontSize={20} fontWeight="bold"
+        textAnchor="middle" fontFamily={font}>e</text>
     </svg>
   );
 }
 
 // Filled-in example callout, the form you'd actually see on a drawing.
-// Shows  "Ra 1.6"  above the shelf of a basic symbol.
 function FilledExample({ upper, lower, lay }: {
   upper: string;
   lower?: string;
   lay?: string;
 }) {
-  const shelfY = 18;
-  const viewH = lower ? 110 : 90;
+  const shelfY = 28;
+  const viewH = lower ? 104 : 84;
   return (
-    <svg viewBox={`0 0 200 ${viewH}`} className="tex-sym-filled">
-      <polyline points={`4,${viewH - 14} 18,${viewH + 2} 22,${shelfY} 196,${shelfY}`} {...SS} />
+    <svg viewBox={`0 0 210 ${viewH}`} className="tex-sym-filled">
+      <polyline
+        points={`8,${shelfY + 26} 24,${shelfY + 50} 48,${shelfY} 206,${shelfY}`}
+        {...SS}
+      />
       {/* upper param spec — sits just above the shelf */}
-      <text x={28} y={shelfY - 3} fill="currentColor" fontSize={13}
+      <text x={54} y={shelfY - 5} fill="currentColor" fontSize={15}
         dominantBaseline="auto" fontFamily="system-ui, sans-serif">
         {upper}
       </text>
       {lower && (
-        <text x={28} y={shelfY + 14} fill="currentColor" fontSize={11}
+        <text x={54} y={shelfY + 16} fill="currentColor" fontSize={13}
           dominantBaseline="hanging" fontFamily="system-ui, sans-serif">
           {lower}
         </text>
       )}
       {lay && (
-        <text x={28} y={shelfY + (lower ? 28 : 14)} fill="var(--muted)"
-          fontSize={10} dominantBaseline="hanging" fontFamily="system-ui, sans-serif">
-          lay: {lay}
+        <text x={54} y={shelfY + (lower ? 34 : 16)} fill="var(--muted)"
+          fontSize={12} dominantBaseline="hanging" fontFamily="system-ui, sans-serif">
+          lay {lay}
         </text>
       )}
     </svg>
