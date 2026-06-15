@@ -26,6 +26,11 @@ export const NAVIGATION: NavNode[] = [
     ],
   },
   {
+    id: "realworld",
+    label: "Meeting Spec in the Real World",
+    icon: "⚑",
+  },
+  {
     id: "filtering",
     label: "Filtering",
     icon: "∿",

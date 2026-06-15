@@ -17,6 +17,7 @@ import {
 import { ThreeD } from "./content/ThreeD";
 import { StylusTip } from "./content/StylusTip";
 import { Callouts } from "./content/Callouts";
+import { RealWorld } from "./content/RealWorld";
 import { DEFAULT_PAGE, pageLabel } from "./data/navigation";
 import { api, type FinishSummary, type ParameterDef } from "./api/client";
 import type { Finish } from "./data/finishes";
@@ -66,6 +67,8 @@ export default function App() {
         return <Overview />;
       case "fund-chain":
         return <ProcessingChain />;
+      case "realworld":
+        return <RealWorld />;
       case "filt-cutoffs":
         return <FilteringCutoffs />;
       case "filt-fft":
