@@ -50,6 +50,13 @@ def generate_profile(
     noise_smoothing: int = int(gen_params["noiseSmoothing"])
     spike_density: float = gen_params.get("spikeDensity") or 0.0
     spike_polarity: int = int(gen_params.get("spikePolarity") or 0)
+    # Plateau-valley component: a flat plateau cut by periodic deep valleys, as
+    # produced by honing. This is what gives honed/ground surfaces their
+    # strongly negative skewness (Rsk) — the defining feature of a plateau-honed
+    # cylinder bore (flat bearing area + deep oil-retention grooves).
+    valley_weight: float = gen_params.get("valleyWeight") or 0.0
+    valley_cycles: float = gen_params.get("valleyCycles") or 0.0
+    valley_width: float = gen_params.get("valleyWidth") or 0.15
 
     # 1. Periodic feed-mark component
     phase = rng.random() * 2 * np.pi
@@ -65,6 +72,18 @@ def generate_profile(
 
     # 3. Combine
     z = periodic + noise_weight * noise
+
+    # 3b. Plateau-valley (honing) component — a flat plateau cut by periodic
+    # narrow valleys. Modelled as the negative of a sharp periodic notch so the
+    # surface sits near its peak (plateau) most of the time and plunges into a
+    # groove at each crossing, producing strong negative skew.
+    if valley_weight > 0 and valley_cycles > 0:
+        valley_phase = rng.random()
+        tv = np.arange(n) / n * valley_cycles + valley_phase
+        frac = tv - np.floor(tv)  # 0..1 within each groove period
+        d = (frac - 0.5) / max(valley_width, 1e-3)
+        groove = np.exp(-d * d)  # ~1 at the groove centre, ~0 on the plateau
+        z = z - valley_weight * groove
 
     # 4. Sparse spikes (EDM craters / casting pits)
     if spike_density > 0:

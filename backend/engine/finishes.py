@@ -18,6 +18,13 @@ class GenParams:
     noiseSmoothing: int
     spikeDensity: Optional[float] = None
     spikePolarity: Optional[int] = None
+    # Plateau-valley (honing) component → negative skew. valleyWeight is the
+    # groove depth relative to the plateau roughness; valleyCycles is the number
+    # of groove crossings over the evaluation length; valleyWidth is the groove
+    # sharpness (smaller = narrower, more negative skew).
+    valleyWeight: Optional[float] = None
+    valleyCycles: Optional[float] = None
+    valleyWidth: Optional[float] = None
 
 
 @dataclass
@@ -53,14 +60,24 @@ FINISHES_LIST: list[Finish] = [
         description="Bonded abrasive stones move in a crosshatch pattern, leaving fine intersecting marks that retain oil — classic for bores.",
         applications="Engine cylinder bores, hydraulic bores, bearing races.",
         raMin=0.05, raMax=0.4, defaultRa=0.2,
-        genParams=GenParams(periodicWeight=0.5, periodicCycles=50, noiseWeight=0.7, noiseSmoothing=2),
+        # Plateau honing: a flat bearing plateau cut by deep cross-hatch grooves
+        # the trace crosses periodically → strongly negative skew (Rsk).
+        genParams=GenParams(
+            periodicWeight=0.0, periodicCycles=0, noiseWeight=0.15, noiseSmoothing=2,
+            valleyWeight=2.2, valleyCycles=24, valleyWidth=0.07,
+        ),
     ),
     Finish(
         id="grinding", process="Grinding", family="Abrasive / fine",
         description="A rotating abrasive wheel produces a fine, directional finish with closely spaced marks. The workhorse precision finishing process.",
         applications="Shafts, bearing journals, dies, precision flats.",
         raMin=0.1, raMax=1.6, defaultRa=0.4,
-        genParams=GenParams(periodicWeight=0.6, periodicCycles=80, noiseWeight=0.8, noiseSmoothing=2),
+        # Ground surfaces carry a mild negative skew (sharp peaks abraded off,
+        # finer scratches remain as shallow valleys).
+        genParams=GenParams(
+            periodicWeight=0.6, periodicCycles=80, noiseWeight=0.8, noiseSmoothing=2,
+            valleyWeight=0.4, valleyCycles=120, valleyWidth=0.22,
+        ),
     ),
     Finish(
         id="reaming", process="Reaming", family="Hole making",
