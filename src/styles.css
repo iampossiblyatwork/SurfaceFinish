@@ -611,6 +611,26 @@ input[type="range"] {
 .trace-canvas-wrap.loading canvas {
   opacity: 0.4;
 }
+.trace-canvas-wrap {
+  position: relative;
+}
+.anamorphic-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.anamorphic-toggle.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 
 /* ---- Error screen ---- */
 .app-error {

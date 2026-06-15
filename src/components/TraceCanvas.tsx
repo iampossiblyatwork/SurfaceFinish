@@ -8,6 +8,15 @@ interface TraceCanvasProps {
   detailed?: boolean;
   className?: string;
   ariaLabel?: string;
+  /**
+   * When false (default), the vertical scale is fixed to `fullScaleUm` so the
+   * trace amplitude reflects the real Ra — a fine finish looks shallow, a rough
+   * one looks tall. When true, the trace is auto-fit to fill the canvas
+   * (anamorphic vertical exaggeration) so fine detail is always visible.
+   */
+  anamorphic?: boolean;
+  /** Amplitude (µm) that maps to the canvas half-height in fixed-scale mode. */
+  fullScaleUm?: number;
 }
 
 /**
@@ -21,6 +30,8 @@ export function TraceCanvas({
   detailed = false,
   className,
   ariaLabel,
+  anamorphic = false,
+  fullScaleUm,
 }: TraceCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -69,7 +80,12 @@ export function TraceCanvas({
         if (a > maxAbs) maxAbs = a;
       }
       if (maxAbs === 0) maxAbs = 1;
-      const yScale = (plotH / 2) / (maxAbs * 1.1);
+      // Fixed-scale mode pins the scale to a real amplitude so Ra is comparable
+      // across traces; anamorphic mode auto-fits to fill the canvas.
+      const useFixed = !anamorphic && fullScaleUm && fullScaleUm > 0;
+      const yScale = useFixed
+        ? (plotH / 2) / (fullScaleUm as number)
+        : (plotH / 2) / (maxAbs * 1.1);
 
       // Light grid.
       if (detailed) {
@@ -112,7 +128,7 @@ export function TraceCanvas({
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [profile, height, detailed]);
+  }, [profile, height, detailed, anamorphic, fullScaleUm]);
 
   return (
     <div ref={wrapRef} className={className} style={{ width: "100%" }}>

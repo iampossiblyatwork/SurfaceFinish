@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { TraceCanvas } from "./TraceCanvas";
 import { useUnits } from "../context/UnitsContext";
 import type { FinishSummary } from "../api/client";
@@ -32,6 +33,7 @@ export function TracePanel({
   showParameters = true,
 }: TracePanelProps) {
   const { unit } = useUnits();
+  const [anamorphic, setAnamorphic] = useState(false);
   const {
     finish,
     finishId,
@@ -48,6 +50,9 @@ export function TracePanel({
   const raMin = finish?.raMin ?? 0.025;
   const raMax = finish?.raMax ?? 50;
   const displayGrade = params ? nearestGrade(params.Ra).grade : grade;
+  // Fixed-scale full-scale amplitude: a few × the process's roughest Ra so peaks
+  // of the worst-case trace nearly fill the canvas and finer traces look shallow.
+  const fullScaleUm = raMax * 4;
 
   return (
     <div className="trace-panel">
@@ -71,11 +76,26 @@ export function TracePanel({
             profile={profile}
             detailed
             height={170}
+            anamorphic={anamorphic}
+            fullScaleUm={fullScaleUm}
             ariaLabel={`${finish?.process ?? ""} surface trace at Ra ${formatLength(params?.Ra ?? targetRa, unit)}`}
           />
         ) : (
           <div className="trace-skeleton" style={{ height: 170 }} />
         )}
+        <button
+          type="button"
+          className={`anamorphic-toggle${anamorphic ? " active" : ""}`}
+          onClick={() => setAnamorphic((a) => !a)}
+          aria-pressed={anamorphic}
+          title={
+            anamorphic
+              ? "Showing exaggerated vertical scale — click for true scale"
+              : "Trace shown at true scale — click to magnify vertically"
+          }
+        >
+          {anamorphic ? "↕ Anamorphic" : "↕ True scale"}
+        </button>
       </div>
 
       <div className="trace-readout-top">
