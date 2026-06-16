@@ -11,8 +11,8 @@ const VIZ: Record<string, string> = {
   Rz: "segments",
   Rc: "segments",
   RSm: "spacing",
-  Rsk: "hist",
-  Rku: "hist",
+  Rsk: "skewCompare",
+  Rku: "kurtCompare",
   RDq: "slope",
 };
 
@@ -24,7 +24,8 @@ const CAPTION: Record<string, string> = {
   span: "Total height: highest peak to lowest valley.",
   segments: "Peak + valley found in each of 5 sampling lengths, then averaged.",
   spacing: "Spacing between successive profile elements (mean-line crossings).",
-  hist: "Heights collected into their distribution (right) — its lean is skewness, its peakedness is kurtosis.",
+  skewCompare: "Skewness is the lean of the height distribution: negative = plateau with deep valleys, positive = peaks above a flat, zero = symmetric.",
+  kurtCompare: "Kurtosis is the peakedness of the distribution: below 3 is broad and bumpy, 3 is Gaussian, above 3 is spiky with sharp peaks or deep scratches.",
   slope: "Local slope at each point; the parameter is their RMS.",
 };
 
@@ -167,6 +168,139 @@ function rqCompareSet(): RqRow[] {
   ];
 }
 
+// ─── Skewness / kurtosis example sets ────────────────────────────────────────
+
+interface MomentRow {
+  z: number[];
+  val: number; // Rsk or Rku
+  label: string;
+}
+
+function prng(seed: number): () => number {
+  let s = seed;
+  return () => {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    return s / 0x7fffffff;
+  };
+}
+
+function centre(z: number[]): number[] {
+  let m = 0;
+  for (const v of z) m += v;
+  m /= z.length;
+  return z.map((v) => v - m);
+}
+
+function skewOf(z: number[]): number {
+  const n = z.length;
+  let sq = 0;
+  let s3 = 0;
+  for (const v of z) {
+    sq += v * v;
+    s3 += v ** 3;
+  }
+  const rq = Math.sqrt(sq / n);
+  return rq > 0 ? s3 / n / rq ** 3 : 0;
+}
+
+function kurtOf(z: number[]): number {
+  const n = z.length;
+  let sq = 0;
+  let s4 = 0;
+  for (const v of z) {
+    sq += v * v;
+    s4 += v ** 4;
+  }
+  const rq = Math.sqrt(sq / n);
+  return rq > 0 ? s4 / n / rq ** 4 : 0;
+}
+
+/** Plateau ripple plus periodic Gaussian features — valleys (dir −1) give
+ *  negative skew, peaks (dir +1) give positive skew. */
+function asymProfile(dir: number, seed: number): number[] {
+  const n = 280;
+  const rnd = prng(seed);
+  const z = new Array<number>(n);
+  for (let i = 0; i < n; i++) {
+    const x = i / n;
+    const f = (x * 6) % 1;
+    const d = (f - 0.5) / 0.09;
+    z[i] = 0.12 * Math.sin(2 * Math.PI * 9 * x) + dir * Math.exp(-d * d) + (rnd() - 0.5) * 0.05;
+  }
+  return centre(z);
+}
+
+function skewSet(): MomentRow[] {
+  const neg = asymProfile(-1, 5);
+  const sym = (() => {
+    const n = 280;
+    const rnd = prng(11);
+    const z = new Array<number>(n);
+    for (let i = 0; i < n; i++) {
+      const x = i / n;
+      z[i] =
+        Math.sin(2 * Math.PI * 4 * x) + 0.4 * Math.sin(2 * Math.PI * 9 * x + 1) + (rnd() - 0.5) * 0.1;
+    }
+    return centre(z);
+  })();
+  const pos = asymProfile(1, 5);
+  return [
+    { z: neg, val: skewOf(neg), label: "negative — valleys" },
+    { z: sym, val: skewOf(sym), label: "≈ 0 — symmetric" },
+    { z: pos, val: skewOf(pos), label: "positive — peaks" },
+  ];
+}
+
+function kurtSet(): MomentRow[] {
+  const n = 280;
+  // Bumpy / broad — sub-Gaussian (a sine alone gives 1.5).
+  const bumpy = (() => {
+    const z = new Array<number>(n);
+    for (let i = 0; i < n; i++) {
+      const x = i / n;
+      z[i] = Math.sin(2 * Math.PI * 3 * x) + 0.35 * Math.sin(2 * Math.PI * 6 * x + 0.7);
+    }
+    return centre(z);
+  })();
+  // Random — roughly Gaussian (Rku ≈ 3).
+  const gauss = (() => {
+    const rnd = prng(23);
+    const z = new Array<number>(n);
+    for (let i = 0; i < n; i++) {
+      let g = 0;
+      for (let k = 0; k < 6; k++) g += rnd();
+      z[i] = g - 3;
+    }
+    return centre(z);
+  })();
+  // Spiky — sparse tall spikes both directions (skew stays ~0, kurtosis high).
+  const spiky = (() => {
+    const rnd = prng(31);
+    const spikes: Array<[number, number, number]> = [
+      [0.16, 2.6, 0.012],
+      [0.34, -2.6, 0.012],
+      [0.6, 2.7, 0.011],
+      [0.82, -2.5, 0.012],
+    ];
+    const z = new Array<number>(n);
+    for (let i = 0; i < n; i++) {
+      const x = i / n;
+      let v = 0.08 * Math.sin(2 * Math.PI * 8 * x) + (rnd() - 0.5) * 0.05;
+      for (const [p, a, w] of spikes) {
+        const d = (x - p) / w;
+        v += a * Math.exp(-d * d);
+      }
+      z[i] = v;
+    }
+    return centre(z);
+  })();
+  return [
+    { z: bumpy, val: kurtOf(bumpy), label: "low — broad / bumpy" },
+    { z: gauss, val: kurtOf(gauss), label: "≈ 3 — Gaussian" },
+    { z: spiky, val: kurtOf(spiky), label: "high — spiky" },
+  ];
+}
+
 interface ParameterVizProps {
   vizKey: string | null;
   profile: Profile | null;
@@ -201,11 +335,13 @@ export function ParameterViz({
       const dpr = window.devicePixelRatio || 1;
       const cssW = wrap.clientWidth || 300;
       // Expanded: height tracks width so the trace fills the box at a natural
-      // aspect with generous amplitude. The Rq comparison stacks three rows, so
-      // it needs a taller box (especially on a narrow phone canvas).
+      // aspect with generous amplitude. The comparison vizzes stack three rows,
+      // so they need a taller box (especially on a narrow phone canvas).
+      const tallCompare =
+        type === "rmsCompare" || type === "skewCompare" || type === "kurtCompare";
       const cssH = !expanded
         ? height
-        : type === "rmsCompare"
+        : tallCompare
           ? Math.round(Math.min(380, Math.max(252, cssW * 0.5)))
           : Math.round(Math.min(340, cssW * 0.34 + 52));
       canvas.width = Math.round(cssW * dpr);
@@ -293,12 +429,135 @@ export function ParameterViz({
         return;
       }
 
+      if (type === "skewCompare" || type === "kurtCompare") {
+        // Example profiles (left) and their height distributions (right) for a
+        // range of skewness or kurtosis — the shape of the distribution is the
+        // parameter.
+        const isSkew = type === "skewCompare";
+        const amber = "#e3a857";
+        const rowColors = [accent, good, amber];
+        const full = isSkew ? skewSet() : kurtSet();
+        const set = expanded ? full : [full[0], full[2]];
+        const padC = 8;
+        const plotWC = cssW - padC * 2;
+        const plotHC = cssH - padC * 2;
+        const rows = set.length;
+        const rowH = plotHC / rows;
+        const rowHalf = rowH / 2 - 6;
+        const splitX = padC + plotWC * 0.56;
+
+        set.forEach((r, ri) => {
+          const m = r.z.length;
+          const midY = padC + rowH * (ri + 0.5);
+          const col = rowColors[ri % rowColors.length];
+          let maxAbs = 0;
+          for (const v of r.z) maxAbs = Math.max(maxAbs, Math.abs(v));
+          if (maxAbs === 0) maxAbs = 1;
+          const span = maxAbs * 1.08;
+          const sc = rowHalf / span;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(padC, midY - rowH / 2 + 1, plotWC, rowH - 2);
+          ctx.clip();
+
+          // Mean line across the profile region.
+          ctx.strokeStyle = muted;
+          ctx.globalAlpha = 0.6;
+          ctx.setLineDash([3, 3]);
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(padC, midY);
+          ctx.lineTo(splitX - 8, midY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.globalAlpha = 1;
+
+          // Profile (left).
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 1.5;
+          ctx.lineJoin = "round";
+          ctx.beginPath();
+          for (let i = 0; i < m; i++) {
+            const x = padC + ((splitX - 8 - padC) * i) / (m - 1);
+            const y = midY - r.z[i] * sc;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+
+          // Divider.
+          ctx.strokeStyle = grid;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(splitX, midY - rowH / 2 + 4);
+          ctx.lineTo(splitX, midY + rowH / 2 - 4);
+          ctx.stroke();
+
+          // Amplitude distribution (right), height on the y-axis.
+          const bins = 40;
+          const counts = new Array(bins).fill(0);
+          for (const v of r.z) {
+            let b = Math.floor(((v / span + 1) / 2) * bins);
+            b = Math.max(0, Math.min(bins - 1, b));
+            counts[b]++;
+          }
+          const sm = counts.map((_, b) => {
+            let s = 0;
+            let c = 0;
+            for (let k = -2; k <= 2; k++) {
+              const j = b + k;
+              if (j >= 0 && j < bins) {
+                s += counts[j];
+                c++;
+              }
+            }
+            return s / c;
+          });
+          const maxC = Math.max(...sm, 1);
+          const distW = padC + plotWC - splitX - 4;
+          const hAt = (b: number) => (((b + 0.5) / bins) * 2 - 1) * span;
+          const xAt = (b: number) => splitX + (sm[b] / maxC) * distW;
+          ctx.beginPath();
+          ctx.moveTo(splitX, midY - hAt(0) * sc);
+          for (let b = 0; b < bins; b++) ctx.lineTo(xAt(b), midY - hAt(b) * sc);
+          ctx.lineTo(splitX, midY - hAt(bins - 1) * sc);
+          ctx.closePath();
+          ctx.fillStyle = col;
+          ctx.globalAlpha = 0.3;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          for (let b = 0; b < bins; b++) {
+            const x = xAt(b);
+            const y = midY - hAt(b) * sc;
+            if (b === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+
+          ctx.restore();
+
+          // Label overlaid in the row's top-left corner.
+          if (expanded) {
+            ctx.fillStyle = col;
+            ctx.font = "bold 12px system-ui, sans-serif";
+            ctx.fillText(
+              `${isSkew ? "Rsk" : "Rku"} = ${r.val.toFixed(2)}  (${r.label})`,
+              padC + 4,
+              padC + rowH * ri + 13,
+            );
+          }
+        });
+        return;
+      }
+
       // Geometric annotations (area, peaks, spacing, segments, slope, span) are
       // drawn on a clean idealized profile so the mechanism is legible — a few
-      // well-spaced elements rather than the dense live trace. The height
-      // distribution (hist) uses the real profile so skew/kurtosis reflect the
-      // actual finish.
-      const z = type === "hist" && profile ? profile.z : vizProfile();
+      // well-spaced elements rather than the dense live trace.
+      const z = vizProfile();
       const n = z.length;
       if (n === 0) return;
       const pad = 6;
@@ -573,92 +832,6 @@ export function ParameterViz({
           ctx.stroke();
         }
         ctx.globalAlpha = 1;
-      } else if (type === "hist") {
-        // Profile on the left; its amplitude distribution (the probability
-        // density of heights) on the right, sharing the height axis. Skewness is
-        // the lean of that distribution; kurtosis is its peakedness.
-        const splitX = pad + plotW * 0.62;
-        const profW = splitX - pad - 4;
-        const xOfL = (i: number) => pad + (profW * i) / (n - 1);
-
-        // Shared mean line.
-        ctx.strokeStyle = muted;
-        ctx.setLineDash([4, 3]);
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(pad, mid);
-        ctx.lineTo(pad + plotW, mid);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Profile (left).
-        ctx.strokeStyle = accent;
-        ctx.lineWidth = 1.2;
-        ctx.lineJoin = "round";
-        ctx.beginPath();
-        for (let i = 0; i < n; i++) {
-          const x = xOfL(i);
-          const y = mid - z[i] * scale;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-
-        // Divider.
-        ctx.strokeStyle = grid;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(splitX, pad);
-        ctx.lineTo(splitX, pad + plotH);
-        ctx.stroke();
-
-        // Amplitude distribution (right), height on the y-axis.
-        const bins = 48;
-        const span = maxAbs * 1.08;
-        const counts = new Array(bins).fill(0);
-        for (const v of z) {
-          let b = Math.floor(((v / span + 1) / 2) * bins);
-          b = Math.max(0, Math.min(bins - 1, b));
-          counts[b]++;
-        }
-        const sm = counts.map((_, b) => {
-          let s = 0;
-          let c = 0;
-          for (let k = -2; k <= 2; k++) {
-            const j = b + k;
-            if (j >= 0 && j < bins) {
-              s += counts[j];
-              c++;
-            }
-          }
-          return s / c;
-        });
-        const maxC = Math.max(...sm, 1);
-        const distW = pad + plotW - splitX - 4;
-        const hAt = (b: number) => (((b + 0.5) / bins) * 2 - 1) * span;
-        const xAt = (b: number) => splitX + (sm[b] / maxC) * distW;
-
-        // Filled area.
-        ctx.beginPath();
-        ctx.moveTo(splitX, mid - hAt(0) * scale);
-        for (let b = 0; b < bins; b++) ctx.lineTo(xAt(b), mid - hAt(b) * scale);
-        ctx.lineTo(splitX, mid - hAt(bins - 1) * scale);
-        ctx.closePath();
-        ctx.fillStyle = accent;
-        ctx.globalAlpha = 0.3;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        // Outline.
-        ctx.strokeStyle = accent;
-        ctx.lineWidth = 1.6;
-        ctx.beginPath();
-        for (let b = 0; b < bins; b++) {
-          const x = xAt(b);
-          const y = mid - hAt(b) * scale;
-          if (b === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
       } else if (type === "slope") {
         drawMean();
         drawTrace(accent, 1.1);
