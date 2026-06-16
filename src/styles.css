@@ -744,6 +744,17 @@ input[type="range"] {
 .lesson-callout p:last-child {
   margin-bottom: 0;
 }
+.start-here {
+  margin: 2px 0 0;
+  padding-left: 18px;
+}
+.start-here li {
+  margin-bottom: 6px;
+  line-height: 1.45;
+}
+.start-here li:last-child {
+  margin-bottom: 0;
+}
 
 .lesson-table {
   width: 100%;

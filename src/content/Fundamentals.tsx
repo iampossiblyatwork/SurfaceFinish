@@ -5,44 +5,39 @@ export function Overview() {
   return (
     <Lesson
       title="What is surface finish?"
-      intro="When someone asks “what's the surface finish?” they're almost always asking “what's the Ra value?” But Ra is just one number squeezed out of a long chain of measurement and filtering. This reference walks that whole chain, then every parameter that comes out the other end."
+      intro="Ask for “the surface finish” and you're almost always being asked for Ra — one number pulled from a measured trace. This reference shows where that number comes from and what the others mean."
     >
-      <h2>The everyday meaning</h2>
+      <h2>Ra in one line</h2>
       <p>
-        In a shop, “surface finish” is shorthand for Ra — the arithmetic mean
-        roughness. It's stable, universally specified, and easy to compare. It's
-        also, on its own, a blunt instrument: two very different surfaces can
-        share the same Ra. Ra tells you the process hasn't drifted badly; it
-        rarely tells you <em>why</em> a part performs the way it does.
+        Ra is the average roughness height — easy to compare and universally
+        specified. But two very different surfaces can share the same Ra, so on
+        its own it rarely tells you <em>why</em> a part performs the way it does.
       </p>
 
-      <h2>The ISO meaning</h2>
-      <p>
-        ISO is more precise. It defines a sequence of <strong>profiles</strong>,
-        each derived from the last by a filter:
-      </p>
-      <Callout label="Total profile (ISO 3274)">
-        The digital form of the traced profile relative to the reference,
-        with vertical and horizontal coordinates assigned to each other.
-      </Callout>
-      <Callout label="Primary profile (ISO 3274)">
-        The total profile after the short-wavelength filter <em>λs</em> removes
-        noise. Still contains both roughness and waviness.
-      </Callout>
-      <Callout label="Roughness profile (ISO 4287)">
-        Derived from the primary profile by suppressing the long-wave component
-        with the profile filter <em>λc</em> — the cutoff usually written on your
-        drawing. This profile is intentionally modified, and it is the basis for
-        evaluating roughness parameters such as Ra and Rz.
+      <Callout label="Start here">
+        <ul className="start-here">
+          <li>
+            <strong>Meeting Spec in the Real World</strong> — a bare callout with
+            no filter or parameter? Start here.
+          </li>
+          <li>
+            <strong>Filtering → Choosing a cutoff</strong> — pick the right filter
+            when the drawing doesn't give you one.
+          </li>
+          <li>
+            <strong>Surface Finish Profilers</strong> — what each parameter means,
+            with a live value you can drive.
+          </li>
+          <li>
+            <strong>Tools → Trace generator</strong> — change a surface and watch
+            the numbers move.
+          </li>
+        </ul>
       </Callout>
 
-      <h2>Where this app goes next</h2>
-      <p>
-        The <strong>Filtering</strong> section explains how a raw trace becomes a
-        roughness profile and how to pick the cutoff. The{" "}
-        <strong>Profilers</strong> section then defines every amplitude, spacing,
-        and hybrid parameter computed from that profile — each with a live value
-        you can drive from a synthesized trace.
+      <p className="lesson-source">
+        New to the theory? <strong>The ISO processing chain</strong> (next page)
+        shows how a raw stylus trace becomes a roughness number.
       </p>
     </Lesson>
   );
