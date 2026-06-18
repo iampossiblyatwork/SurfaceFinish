@@ -1,7 +1,8 @@
 import { Lesson, Callout } from "./Lesson";
 import processingChain from "../assets/processing-chain.png";
 
-export function Overview() {
+export function Overview({ onNavigate }: { onNavigate?: (id: string) => void }) {
+  const go = (id: string) => () => onNavigate?.(id);
   return (
     <Lesson
       title="What is surface finish?"
@@ -17,26 +18,43 @@ export function Overview() {
       <Callout label="Start here">
         <ul className="start-here">
           <li>
-            <strong>Meeting Spec in the Real World</strong> — a bare callout with
-            no filter or parameter? Start here.
+            <button type="button" className="nav-link" onClick={go("realworld")}>
+              Meeting Spec in the Real World
+            </button>{" "}
+            — a bare callout with no filter or parameter? Start here.
           </li>
           <li>
-            <strong>Filtering → Choosing a cutoff</strong> — pick the right filter
-            when the drawing doesn't give you one.
+            <button type="button" className="nav-link" onClick={go("callouts")}>
+              Callouts &amp; Standards
+            </button>{" "}
+            — how to read the surface-finish symbol on a drawing.
           </li>
           <li>
-            <strong>Surface Finish Profilers</strong> — what each parameter means,
-            with a live value you can drive.
+            <button type="button" className="nav-link" onClick={go("filt-choosing")}>
+              Choosing a cutoff
+            </button>{" "}
+            — pick the right filter when the drawing doesn't give you one.
           </li>
           <li>
-            <strong>Tools → Trace generator</strong> — change a surface and watch
-            the numbers move.
+            <button type="button" className="nav-link" onClick={go("prof-amplitude")}>
+              Surface Finish Profilers
+            </button>{" "}
+            — what each parameter means, with a live value you can drive.
+          </li>
+          <li>
+            <button type="button" className="nav-link" onClick={go("tool-generator")}>
+              Trace generator
+            </button>{" "}
+            — change a surface and watch the numbers move.
           </li>
         </ul>
       </Callout>
 
       <p className="lesson-source">
-        New to the theory? <strong>The ISO processing chain</strong> (next page)
+        New to the theory?{" "}
+        <button type="button" className="nav-link" onClick={go("fund-chain")}>
+          The ISO processing chain
+        </button>{" "}
         shows how a raw stylus trace becomes a roughness number.
       </p>
     </Lesson>

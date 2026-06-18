@@ -31,6 +31,11 @@ export const NAVIGATION: NavNode[] = [
     icon: "⚑",
   },
   {
+    id: "callouts",
+    label: "Callouts & Standards",
+    icon: "▣",
+  },
+  {
     id: "filtering",
     label: "Filtering",
     icon: "∿",
@@ -72,11 +77,6 @@ export const NAVIGATION: NavNode[] = [
       { id: "tool-compare", label: "Compare finishes" },
       { id: "tool-chart", label: "Roughness comparison" },
     ],
-  },
-  {
-    id: "callouts",
-    label: "Callouts & Standards",
-    icon: "▣",
   },
 ];
 

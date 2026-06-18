@@ -64,7 +64,7 @@ export default function App() {
   const renderPage = () => {
     switch (page) {
       case "fund-overview":
-        return <Overview />;
+        return <Overview onNavigate={navigate} />;
       case "fund-chain":
         return <ProcessingChain />;
       case "realworld":
