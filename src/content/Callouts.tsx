@@ -42,41 +42,30 @@ function SmallSym({ variant, shelfEnd = 100 }: {
   );
 }
 
-// Large annotated diagram showing where fields a–e sit (viewBox 0 0 330 200).
+// Large annotated diagram showing where fields a–e sit (recreated from the deck
+// legend: single shelf, e left of the leg, c top-right, a below the shelf, b
+// under a, d below-middle). viewBox 0 0 340 200.
 function AnnotatedSym() {
   const ac = "var(--accent)";
   const go = "var(--good)";
   const mu = "var(--muted)";
-  const font = "system-ui, sans-serif";
-  const leader = { stroke: mu, strokeWidth: 1.2 };
+  const T = {
+    fontSize: 22,
+    fontWeight: "bold" as const,
+    textAnchor: "middle" as const,
+    dominantBaseline: "central" as const,
+    fontFamily: "system-ui, sans-serif",
+  };
 
   return (
-    <svg viewBox="0 0 330 200" className="tex-sym-annotated">
-      {/* Main symbol body: short left leg → vertex → tall right leg → shelf */}
-      <polyline points="34,120 74,174 128,64 314,64" {...SS} />
-
-      {/* leader ticks from each label to its zone */}
-      <line x1={150} y1={44} x2={138} y2={62} {...leader} />
-      <line x1={150} y1={92} x2={138} y2={70} {...leader} />
-      <line x1={163} y1={34} x2={155} y2={60} {...leader} />
-      <line x1={120} y1={122} x2={104} y2={86} {...leader} />
-      <line x1={26} y1={112} x2={34} y2={120} {...leader} />
-
-      {/* c — manufacturing method (topmost) */}
-      <text x={150} y={30} fill={go} fontSize={20} fontWeight="bold"
-        textAnchor="middle" fontFamily={font}>c</text>
-      {/* a — upper / primary parameter specification (above the shelf) */}
-      <text x={150} y={56} fill={ac} fontSize={20} fontWeight="bold"
-        textAnchor="middle" fontFamily={font}>a</text>
-      {/* b — second specification (below the shelf) */}
-      <text x={150} y={104} fill={ac} fontSize={20} fontWeight="bold"
-        textAnchor="middle" fontFamily={font}>b</text>
-      {/* d — lay direction (below shelf, toward the leg) */}
-      <text x={118} y={140} fill={mu} fontSize={20} fontWeight="bold"
-        textAnchor="middle" fontFamily={font}>d</text>
-      {/* e — machining allowance (left-leg tip) */}
-      <text x={16} y={112} fill={mu} fontSize={20} fontWeight="bold"
-        textAnchor="middle" fontFamily={font}>e</text>
+    <svg viewBox="0 0 340 200" className="tex-sym-annotated">
+      {/* Short left leg → vertex → tall right leg → horizontal shelf */}
+      <polyline points="58,116 92,186 150,70 332,70" {...SS} />
+      <text x={28} y={122} fill={mu} {...T}>e</text>
+      <text x={252} y={38} fill={go} {...T}>c</text>
+      <text x={252} y={100} fill={ac} {...T}>a</text>
+      <text x={252} y={152} fill={ac} {...T}>b</text>
+      <text x={170} y={152} fill={mu} {...T}>d</text>
     </svg>
   );
 }
@@ -174,11 +163,10 @@ export function Callouts({ onNavigate }: { onNavigate?: (id: string) => void }) 
         <figcaption className="tex-sym-cap">
           Fields <span style={{ color: "var(--accent)" }}>a</span> and{" "}
           <span style={{ color: "var(--accent)" }}>b</span> carry the parameter
-          specifications. <span style={{ color: "var(--good)" }}>c</span> names
-          the manufacturing method (and requires the second horizontal line).{" "}
-          <span style={{ color: "var(--muted)" }}>d</span> is the lay direction
-          symbol. <span style={{ color: "var(--muted)" }}>e</span> is the
-          machining allowance in mm.
+          specifications, <span style={{ color: "var(--good)" }}>c</span> the
+          manufacturing method, <span style={{ color: "var(--muted)" }}>d</span>{" "}
+          the lay direction, and <span style={{ color: "var(--muted)" }}>e</span>{" "}
+          the machining allowance (mm).
         </figcaption>
       </figure>
 
