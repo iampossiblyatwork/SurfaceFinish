@@ -549,6 +549,45 @@ input[type="range"] {
   padding: 2px 5px;
   pointer-events: none;
 }
+.param-viz-zoom.pulse {
+  color: var(--accent);
+  border-color: var(--accent);
+  animation: zoom-pulse 1.5s ease-in-out 3;
+}
+@keyframes zoom-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.28); }
+}
+
+/* ---- One-time discoverability hint ---- */
+.viz-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.viz-hint span {
+  flex: 1;
+}
+.viz-hint-x {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.viz-hint-x:hover {
+  color: var(--text);
+}
 .param-viz-btn:hover .param-viz-zoom,
 .param-viz-btn:focus-visible .param-viz-zoom {
   color: var(--accent);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTrace } from "../hooks/useTrace";
+import { useOnceFlag } from "../hooks/useOnceFlag";
 import { useUnits } from "../context/UnitsContext";
 import { TracePanel } from "./TracePanel";
 import { ParameterCard } from "./ParameterCard";
@@ -32,6 +33,7 @@ export function ParameterDictionary({
   const trace = useTrace(finishes[0]?.id, finishes[0]?.defaultRa);
   const { unit } = useUnits();
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  const [hintSeen, markHint] = useOnceFlag("surface-finish-hint-seen");
 
   // Scroll a deep-linked / searched-for parameter into view and flash it.
   useEffect(() => {
@@ -45,6 +47,9 @@ export function ParameterDictionary({
   }, [focusSymbol]);
 
   const categories = category ? [category] : CATEGORY_ORDER;
+  const firstSymbol = categories.flatMap((cat) =>
+    parameters.filter((p) => p.category === cat),
+  )[0]?.symbol;
 
   return (
     <section className="view">
@@ -56,6 +61,22 @@ export function ParameterDictionary({
       <div className="reference-trace">
         <TracePanel trace={trace} finishes={finishes} showParameters={false} />
       </div>
+
+      {!hintSeen && (
+        <div className="viz-hint" role="note">
+          <span>
+            Tap any diagram to enlarge · the trace above drives every value.
+          </span>
+          <button
+            type="button"
+            className="viz-hint-x"
+            onClick={markHint}
+            aria-label="Dismiss hint"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {categories.map((cat) => {
         const items = parameters.filter((p) => p.category === cat);
@@ -72,6 +93,7 @@ export function ParameterDictionary({
                   def={p}
                   profile={trace.profile}
                   highlight={highlighted === p.symbol}
+                  pulseHint={!hintSeen && p.symbol === firstSymbol}
                   value={
                     p.key && trace.params && p.key in trace.params
                       ? formatParameterValue(

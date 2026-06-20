@@ -12,9 +12,17 @@ interface ParameterCardProps {
   profile?: Profile | null;
   /** Briefly outline the card when it's the deep-link / search target. */
   highlight?: boolean;
+  /** One-time pulse on the expand badge, to signal the diagram is tappable. */
+  pulseHint?: boolean;
 }
 
-export function ParameterCard({ def, value, profile, highlight }: ParameterCardProps) {
+export function ParameterCard({
+  def,
+  value,
+  profile,
+  highlight,
+  pulseHint,
+}: ParameterCardProps) {
   const caption = vizCaption(def.key);
   const [open, setOpen] = useState(false);
   const showViz = !!(profile && hasViz(def.key));
@@ -53,7 +61,12 @@ export function ParameterCard({ def, value, profile, highlight }: ParameterCardP
             aria-label={`Expand the ${def.name} diagram`}
           >
             <ParameterViz vizKey={def.key} profile={profile} symbol={def.symbol} />
-            <span className="param-viz-zoom" aria-hidden="true">⤢</span>
+            <span
+              className={`param-viz-zoom${pulseHint ? " pulse" : ""}`}
+              aria-hidden="true"
+            >
+              ⤢
+            </span>
           </button>
           {caption && <p className="param-viz-caption">{caption}</p>}
         </>
