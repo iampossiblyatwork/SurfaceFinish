@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useTrace } from "../hooks/useTrace";
 import { useUnits } from "../context/UnitsContext";
 import { TracePanel } from "./TracePanel";
@@ -17,6 +18,8 @@ interface ParameterDictionaryProps {
   /** When set, only this category's parameters are shown (drives the Profilers subsections). */
   category?: ParameterCategory;
   intro?: string;
+  /** Deep-link target: a parameter symbol to scroll to and briefly highlight. */
+  focusSymbol?: string;
 }
 
 export function ParameterDictionary({
@@ -24,9 +27,22 @@ export function ParameterDictionary({
   finishes,
   category,
   intro,
+  focusSymbol,
 }: ParameterDictionaryProps) {
   const trace = useTrace(finishes[0]?.id, finishes[0]?.defaultRa);
   const { unit } = useUnits();
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+
+  // Scroll a deep-linked / searched-for parameter into view and flash it.
+  useEffect(() => {
+    if (!focusSymbol) return;
+    const el = document.getElementById(`param-${focusSymbol}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlighted(focusSymbol);
+    const t = setTimeout(() => setHighlighted(null), 1600);
+    return () => clearTimeout(t);
+  }, [focusSymbol]);
 
   const categories = category ? [category] : CATEGORY_ORDER;
 
@@ -55,6 +71,7 @@ export function ParameterDictionary({
                   key={p.symbol}
                   def={p}
                   profile={trace.profile}
+                  highlight={highlighted === p.symbol}
                   value={
                     p.key && trace.params && p.key in trace.params
                       ? formatParameterValue(

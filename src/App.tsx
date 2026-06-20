@@ -18,18 +18,20 @@ import { ThreeD } from "./content/ThreeD";
 import { StylusTip } from "./content/StylusTip";
 import { Callouts } from "./content/Callouts";
 import { RealWorld } from "./content/RealWorld";
-import { DEFAULT_PAGE, pageLabel } from "./data/navigation";
+import { pageLabel, parseHash, routeToHash } from "./data/navigation";
 import { api, type FinishSummary, type ParameterDef } from "./api/client";
 import type { Finish } from "./data/finishes";
 
 export default function App() {
-  const [page, setPage] = useState<string>(DEFAULT_PAGE);
+  const [route, setRoute] = useState(() => parseHash(window.location.hash));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [generatorFinishId, setGeneratorFinishId] = useState<string | undefined>(undefined);
   const [finishes, setFinishes] = useState<FinishSummary[]>([]);
   const [families, setFamilies] = useState<string[]>([]);
   const [parameters, setParameters] = useState<ParameterDef[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);
+
+  const page = route.page;
 
   useEffect(() => {
     Promise.all([api.finishes(), api.parameters()])
@@ -41,10 +43,27 @@ export default function App() {
       .catch((err: Error) => setDataError(err.message));
   }, []);
 
-  const navigate = (pageId: string) => {
-    setPage(pageId);
+  // The location hash is the source of truth: refresh keeps your place, the
+  // back button works, and pages/parameters are deep-linkable.
+  useEffect(() => {
+    const onHash = () => {
+      const r = parseHash(window.location.hash);
+      setRoute(r);
+      if (!r.anchor) window.scrollTo({ top: 0 });
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  const navigate = (pageId: string, anchor?: string) => {
+    const target = routeToHash(pageId, anchor);
     setDrawerOpen(false);
-    window.scrollTo({ top: 0 });
+    if (`#${target}` === window.location.hash) {
+      setRoute({ page: pageId, anchor }); // no hashchange will fire
+    } else {
+      window.location.hash = target;
+    }
+    if (!anchor) window.scrollTo({ top: 0 });
   };
 
   const openInGenerator = (finishId: string) => {
@@ -83,6 +102,7 @@ export default function App() {
             parameters={parameters}
             finishes={finishes}
             category="amplitude"
+            focusSymbol={route.anchor}
             intro="Amplitude parameters measure how far the profile's data points sit from the mean line. Ra is the workhorse; the rest describe peaks, valleys, and distribution shape."
           />
         );
@@ -92,6 +112,7 @@ export default function App() {
             parameters={parameters}
             finishes={finishes}
             category="spacing"
+            focusSymbol={route.anchor}
             intro="Spacing parameters look at wavelengths along the surface rather than heights. RSm — mean element width — is the key one, useful for feed rates and filter selection."
           />
         );
@@ -101,6 +122,7 @@ export default function App() {
             parameters={parameters}
             finishes={finishes}
             category="hybrid"
+            focusSymbol={route.anchor}
             intro="Hybrid parameters combine height and spacing. The slope parameters RΔa and RΔq (in degrees) describe how steeply the surface rises and falls."
           />
         );
@@ -110,6 +132,7 @@ export default function App() {
             parameters={parameters}
             finishes={finishes}
             category="material-ratio"
+            focusSymbol={route.anchor}
             intro="The material ratio (Abbott–Firestone) curve is the cumulative distribution of the profile's heights — the basis of bearing-area and functional parameters."
           />
         );

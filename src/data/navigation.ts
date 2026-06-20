@@ -2,6 +2,8 @@
 // or a "group" whose children are pages. Page ids map to a component in App's
 // renderPage(). Kept as pure UI config — no data fetching here.
 
+import type { ParameterCategory } from "./parameters";
+
 export interface NavChild {
   id: string;
   label: string;
@@ -96,4 +98,40 @@ export function pageLabel(pageId: string): string {
     if (child) return child.label;
   }
   return "";
+}
+
+/** The Profiler page id that lists a given parameter category. */
+export function pageForCategory(category: ParameterCategory): string {
+  switch (category) {
+    case "amplitude":
+      return "prof-amplitude";
+    case "spacing":
+      return "prof-spacing";
+    case "hybrid":
+      return "prof-hybrid";
+    case "material-ratio":
+      return "prof-material";
+  }
+}
+
+export interface Route {
+  page: string;
+  /** Optional deep-link anchor — a parameter symbol to scroll to / highlight. */
+  anchor?: string;
+}
+
+/** Parse a location hash like "#prof-amplitude/Rz" into a validated route. */
+export function parseHash(hash: string): Route {
+  const raw = hash.replace(/^#/, "");
+  if (!raw) return { page: DEFAULT_PAGE };
+  const slash = raw.indexOf("/");
+  const page = slash === -1 ? raw : raw.slice(0, slash);
+  const anchor = slash === -1 ? undefined : decodeURIComponent(raw.slice(slash + 1));
+  if (!ALL_PAGE_IDS.includes(page)) return { page: DEFAULT_PAGE };
+  return { page, anchor: anchor || undefined };
+}
+
+/** Build the hash string for a route (without the leading '#'). */
+export function routeToHash(page: string, anchor?: string): string {
+  return anchor ? `${page}/${encodeURIComponent(anchor)}` : page;
 }

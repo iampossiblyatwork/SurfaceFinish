@@ -374,6 +374,16 @@ input[type="range"] {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px;
+  scroll-margin-top: calc(var(--header-h) + 12px);
+}
+.param-card.highlight {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+  animation: card-flash 1.6s ease-out;
+}
+@keyframes card-flash {
+  0% { box-shadow: 0 0 0 3px var(--accent); }
+  100% { box-shadow: 0 0 0 2px transparent; }
 }
 .param-card-head {
   display: flex;

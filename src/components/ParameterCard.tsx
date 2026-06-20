@@ -10,9 +10,11 @@ interface ParameterCardProps {
   value: string | null;
   /** Current reference profile, used to draw the per-parameter visual. */
   profile?: Profile | null;
+  /** Briefly outline the card when it's the deep-link / search target. */
+  highlight?: boolean;
 }
 
-export function ParameterCard({ def, value, profile }: ParameterCardProps) {
+export function ParameterCard({ def, value, profile, highlight }: ParameterCardProps) {
   const caption = vizCaption(def.key);
   const [open, setOpen] = useState(false);
   const showViz = !!(profile && hasViz(def.key));
@@ -33,7 +35,10 @@ export function ParameterCard({ def, value, profile }: ParameterCardProps) {
   }, [open]);
 
   return (
-    <article className="param-card">
+    <article
+      id={`param-${def.symbol}`}
+      className={`param-card${highlight ? " highlight" : ""}`}
+    >
       <header className="param-card-head">
         <span className="param-card-symbol">{def.symbol}</span>
         <span className="param-card-name">{def.name}</span>
