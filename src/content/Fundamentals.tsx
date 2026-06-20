@@ -1,5 +1,38 @@
-import { Lesson, Callout } from "./Lesson";
-import processingChain from "../assets/processing-chain.png";
+import { Lesson, Callout, Details } from "./Lesson";
+
+// Native dark-mode recreation of the ISO road map: total profile → form removal
+// → primary → λc split into waviness / roughness → parameters.
+function ProcessingChainFlow() {
+  return (
+    <div className="flow" aria-hidden="true">
+      <div className="flow-box">
+        Total profile<small>raw trace, λs noise removed</small>
+      </div>
+      <div className="flow-arrow">
+        ↓<span>form removal (level / de-arc)</span>
+      </div>
+      <div className="flow-box">
+        Primary profile<small>roughness + waviness together</small>
+      </div>
+      <div className="flow-arrow">
+        ↓<span>λc Gaussian filter</span>
+      </div>
+      <div className="flow-branch">
+        <div className="flow-box flow-no">
+          Waviness<small>low-pass · λ &gt; λc</small>
+        </div>
+        <div className="flow-box flow-yes">
+          Roughness<small>high-pass · λ &lt; λc</small>
+        </div>
+      </div>
+      <div className="flow-arrow">↓</div>
+      <div className="flow-box flow-final">
+        Ra · Rz · Rsk · …
+        <small>evaluated on the roughness profile = &ldquo;surface finish&rdquo;</small>
+      </div>
+    </div>
+  );
+}
 
 // A small hero: a roughness trace with its deviation area shaded — the picture
 // behind the page's first sentence ("Ra is one number from a trace").
@@ -94,39 +127,40 @@ export function ProcessingChain() {
       intro="Every roughness number starts as a raw stylus trace and is transformed in stages. Knowing the stage you're looking at is half the battle."
     >
       <figure className="lesson-figure">
-        <img src={processingChain} alt="ISO surface texture processing road map: total profile through form removal, λs and λc filters, into roughness and waviness profiles and their parameters." />
+        <ProcessingChainFlow />
         <figcaption>
-          The full ISO processing road map — from the total profile through form
-          removal and the λs/λc filters to the roughness and waviness profiles
-          and their parameters.
+          The ISO road map — from the total profile through form removal and the
+          λc filter into the waviness and roughness profiles and their parameters.
         </figcaption>
       </figure>
 
-      <ol className="lesson-steps">
-        <li>
-          <strong>Step 1 — Collect raw data.</strong> The trace with no form
-          removal applied. Note this still isn't the truly raw instrument signal:
-          calibrations and stylus corrections are already baked in.
-        </li>
-        <li>
-          <strong>Step 2 — Form removal.</strong> Level the profile or subtract a
-          least-squares arc/line (or, for bearing profiles, a log curve or
-          polynomial). Example: removing a 79&nbsp;mm radius from a curved part.
-        </li>
-        <li>
-          <strong>Primary profile.</strong> The result of form removal. It still
-          contains <em>both</em> roughness and waviness.
-        </li>
-        <li>
-          <strong>Step 3 — Apply the λc filter.</strong> A Gaussian filter splits
-          the primary profile by wavelength at the cutoff.
-        </li>
-        <li>
-          <strong>Waviness</strong> = the <em>low-pass</em> result (wavelengths
-          longer than λc are kept). <strong>Roughness</strong> = the{" "}
-          <em>high-pass</em> result (wavelengths shorter than λc are kept).
-        </li>
-      </ol>
+      <Details summary="The stages in detail">
+        <ol className="lesson-steps">
+          <li>
+            <strong>Step 1 — Collect raw data.</strong> The trace with no form
+            removal applied. Note this still isn't the truly raw instrument signal:
+            calibrations and stylus corrections are already baked in.
+          </li>
+          <li>
+            <strong>Step 2 — Form removal.</strong> Level the profile or subtract a
+            least-squares arc/line (or, for bearing profiles, a log curve or
+            polynomial). Example: removing a 79&nbsp;mm radius from a curved part.
+          </li>
+          <li>
+            <strong>Primary profile.</strong> The result of form removal. It still
+            contains <em>both</em> roughness and waviness.
+          </li>
+          <li>
+            <strong>Step 3 — Apply the λc filter.</strong> A Gaussian filter splits
+            the primary profile by wavelength at the cutoff.
+          </li>
+          <li>
+            <strong>Waviness</strong> = the <em>low-pass</em> result (wavelengths
+            longer than λc are kept). <strong>Roughness</strong> = the{" "}
+            <em>high-pass</em> result (wavelengths shorter than λc are kept).
+          </li>
+        </ol>
+      </Details>
 
       <Callout label="Key point">
         When someone asks for “surface finish,” it's the <strong>roughness

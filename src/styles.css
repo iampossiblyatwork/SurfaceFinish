@@ -950,8 +950,21 @@ input[type="range"] {
 .flow-arrow {
   text-align: center;
   color: var(--muted);
-  line-height: 1;
+  line-height: 1.1;
   font-size: 0.9rem;
+}
+.flow-arrow span {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.flow-box small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 400;
+  margin-top: 3px;
 }
 .flow-q {
   border-color: var(--accent);
