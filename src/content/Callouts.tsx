@@ -35,8 +35,9 @@ function SmallSym({ variant, shelfEnd = 100 }: {
         <line x1={8} y1={36} x2={35.5} y2={36} {...SS} />
       )}
       {variant === "prohibited" && (
-        // Circle in the crook of the tick = material removal prohibited.
-        <circle cx={27} cy={43} r={8.5} {...SS} />
+        // Circle inscribed in the crook, tangent to both legs (center on the
+        // angle bisector at the vertex) = material removal prohibited.
+        <circle cx={22.9} cy={43.9} r={8} {...SS} />
       )}
     </svg>
   );
