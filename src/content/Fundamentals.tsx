@@ -77,34 +77,49 @@ export function Overview({ onNavigate }: { onNavigate?: (id: string) => void }) 
       <Callout label="Start here">
         <ul className="start-here">
           <li>
-            <button type="button" className="nav-link" onClick={go("realworld")}>
-              Meeting Spec in the Real World
-            </button>{" "}
-            — a bare callout with no filter or parameter? Start here.
+            <span className="start-icon" aria-hidden>⚑</span>
+            <span>
+              <button type="button" className="nav-link" onClick={go("realworld")}>
+                Meeting Spec in the Real World
+              </button>{" "}
+              — a bare callout with no filter or parameter? Start here.
+            </span>
           </li>
           <li>
-            <button type="button" className="nav-link" onClick={go("callouts")}>
-              Callouts &amp; Standards
-            </button>{" "}
-            — how to read the surface-finish symbol on a drawing.
+            <span className="start-icon" aria-hidden>▣</span>
+            <span>
+              <button type="button" className="nav-link" onClick={go("callouts")}>
+                Callouts &amp; Standards
+              </button>{" "}
+              — how to read the surface-finish symbol on a drawing.
+            </span>
           </li>
           <li>
-            <button type="button" className="nav-link" onClick={go("filt-choosing")}>
-              Choosing a cutoff
-            </button>{" "}
-            — pick the right filter when the drawing doesn't give you one.
+            <span className="start-icon" aria-hidden>∿</span>
+            <span>
+              <button type="button" className="nav-link" onClick={go("filt-choosing")}>
+                Choosing a cutoff
+              </button>{" "}
+              — pick the right filter when the drawing doesn't give you one.
+            </span>
           </li>
           <li>
-            <button type="button" className="nav-link" onClick={go("prof-amplitude")}>
-              Surface Finish Profilers
-            </button>{" "}
-            — what each parameter means, with a live value you can drive.
+            <span className="start-icon" aria-hidden>▤</span>
+            <span>
+              <button type="button" className="nav-link" onClick={go("prof-amplitude")}>
+                Surface Finish Profilers
+              </button>{" "}
+              — what each parameter means, with a live value you can drive.
+            </span>
           </li>
           <li>
-            <button type="button" className="nav-link" onClick={go("tool-generator")}>
-              Trace generator
-            </button>{" "}
-            — change a surface and watch the numbers move.
+            <span className="start-icon" aria-hidden>↻</span>
+            <span>
+              <button type="button" className="nav-link" onClick={go("tool-generator")}>
+                Trace generator
+              </button>{" "}
+              — change a surface and watch the numbers move.
+            </span>
           </li>
         </ul>
       </Callout>
