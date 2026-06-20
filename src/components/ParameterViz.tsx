@@ -69,6 +69,48 @@ export function vizLegend(key: string | null): VizLegendItem[] | null {
   return key && LEGENDS[key] ? LEGENDS[key] : null;
 }
 
+/**
+ * Abbott–Firestone (material-ratio) curve: sort the profile heights from the
+ * highest peak down and you get the bearing-area curve — a long plateau (broad
+ * load-bearing area near the top) then a steep drop into the valleys. Static,
+ * illustrative; used for the curve-based Rmr(c) parameter which has no live viz.
+ */
+export function AbbottCurve() {
+  const mid = 75;
+  const N = 240;
+  const fn = (t: number) => {
+    const frac = (t * 5) % 1;
+    const dd = (frac - 0.5) / 0.1;
+    return 0.12 * Math.sin(2 * Math.PI * 9 * t) - Math.exp(-dd * dd);
+  };
+  let z = Array.from({ length: N + 1 }, (_, i) => fn(i / N));
+  const m = z.reduce((a, b) => a + b, 0) / z.length;
+  z = z.map((x) => x - m);
+  let mx = 0;
+  for (const x of z) mx = Math.max(mx, Math.abs(x));
+  if (mx === 0) mx = 1;
+  const scale = 58 / (mx * 1.08);
+  const splitX = 150;
+  const prof = z
+    .map((zz, i) => `${(10 + ((splitX - 28) * i) / N).toFixed(1)},${(mid - zz * scale).toFixed(1)}`)
+    .join(" ");
+  const zs = [...z].sort((a, b) => b - a);
+  const distW = 350 - splitX - 4;
+  const curve = zs
+    .map((zz, k) => `${(splitX + (distW * k) / N).toFixed(1)},${(mid - zz * scale).toFixed(1)}`)
+    .join(" ");
+  return (
+    <svg viewBox="0 0 360 152" className="stylus-fig wide" role="img" aria-label="Abbott–Firestone bearing-area curve beside a plateau profile">
+      <line x1={10} y1={mid} x2={splitX - 8} y2={mid} stroke="var(--muted)" strokeWidth={1} strokeDasharray="4 3" />
+      <polyline points={prof} fill="none" stroke="var(--accent)" strokeWidth={1.4} strokeLinejoin="round" />
+      <line x1={splitX} y1={14} x2={splitX} y2={132} stroke="var(--grid)" strokeWidth={1} />
+      <polyline points={curve} fill="none" stroke="var(--good)" strokeWidth={2.2} strokeLinejoin="round" />
+      <text x={splitX + 2} y={148} fill="var(--muted)" fontSize={10} fontFamily="system-ui, sans-serif">0%</text>
+      <text x={350} y={148} fill="var(--muted)" fontSize={10} textAnchor="end" fontFamily="system-ui, sans-serif">100% material ratio</text>
+    </svg>
+  );
+}
+
 function cssVar(name: string, fallback: string): string {
   return (
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() ||

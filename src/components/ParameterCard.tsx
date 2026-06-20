@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ParameterDef } from "../data/parameters";
 import type { Profile } from "../api/client";
-import { ParameterViz, vizCaption, hasViz, vizLegend } from "./ParameterViz";
+import { ParameterViz, vizCaption, hasViz, vizLegend, AbbottCurve } from "./ParameterViz";
 
 interface ParameterCardProps {
   def: ParameterDef;
@@ -25,6 +25,7 @@ export function ParameterCard({
 }: ParameterCardProps) {
   const caption = vizCaption(def.key);
   const legend = vizLegend(def.key);
+  const isAbbott = def.symbol === "Rmr(c)";
   const [open, setOpen] = useState(false);
   const showViz = !!(profile && hasViz(def.key));
 
@@ -82,6 +83,15 @@ export function ParameterCard({
           </button>
           {legendEl}
           {caption && <p className="param-viz-caption">{caption}</p>}
+        </>
+      )}
+      {isAbbott && (
+        <>
+          <AbbottCurve />
+          <p className="param-viz-caption">
+            Sort every height from the highest peak down: a long load-bearing
+            plateau, then a steep drop into the oil-retaining valleys.
+          </p>
         </>
       )}
       <p className="param-card-summary">{def.summary}</p>
