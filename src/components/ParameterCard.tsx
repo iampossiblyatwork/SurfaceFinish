@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ParameterDef } from "../data/parameters";
 import type { Profile } from "../api/client";
-import { ParameterViz, vizCaption, hasViz } from "./ParameterViz";
+import { ParameterViz, vizCaption, hasViz, vizLegend } from "./ParameterViz";
 
 interface ParameterCardProps {
   def: ParameterDef;
@@ -24,6 +24,7 @@ export function ParameterCard({
   pulseHint,
 }: ParameterCardProps) {
   const caption = vizCaption(def.key);
+  const legend = vizLegend(def.key);
   const [open, setOpen] = useState(false);
   const showViz = !!(profile && hasViz(def.key));
 
@@ -41,6 +42,17 @@ export function ParameterCard({
       document.body.style.overflow = prevOverflow;
     };
   }, [open]);
+
+  const legendEl = legend && (
+    <div className="viz-legend">
+      {legend.map((l) => (
+        <span key={l.label} className="viz-legend-item">
+          <span className="viz-legend-swatch" style={{ background: l.color }} />
+          {l.label}
+        </span>
+      ))}
+    </div>
+  );
 
   return (
     <article
@@ -68,6 +80,7 @@ export function ParameterCard({
               ⤢
             </span>
           </button>
+          {legendEl}
           {caption && <p className="param-viz-caption">{caption}</p>}
         </>
       )}
@@ -102,6 +115,7 @@ export function ParameterCard({
                 </button>
               </header>
               <ParameterViz vizKey={def.key} profile={profile} symbol={def.symbol} expanded />
+              {legendEl}
               {caption && <p className="param-viz-caption">{caption}</p>}
               <p className="param-card-meaning">{def.meaning}</p>
               <code className="param-card-formula">{def.formula}</code>

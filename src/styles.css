@@ -519,6 +519,25 @@ input[type="range"] {
   line-height: 1.45;
   margin: 0 0 4px;
 }
+.viz-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 8px 0 2px;
+}
+.viz-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.viz-legend-swatch {
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
 .param-viz-btn {
   display: block;
   width: 100%;

@@ -39,6 +39,36 @@ export function hasViz(key: string | null): boolean {
   return !!(key && VIZ[key]);
 }
 
+export interface VizLegendItem {
+  color: string;
+  label: string;
+}
+
+// Color key for the comparison vizzes (rows are drawn accent / good / amber in
+// this order). Single source of truth shared with the canvas drawing.
+const LEGENDS: Record<string, VizLegendItem[]> = {
+  Rq: [
+    { color: "var(--accent)", label: "smooth" },
+    { color: "var(--good)", label: "some peaks" },
+    { color: "#e3a857", label: "spiky" },
+  ],
+  Rsk: [
+    { color: "var(--accent)", label: "negative" },
+    { color: "var(--good)", label: "symmetric" },
+    { color: "#e3a857", label: "positive" },
+  ],
+  Rku: [
+    { color: "var(--accent)", label: "bumpy" },
+    { color: "var(--good)", label: "Gaussian" },
+    { color: "#e3a857", label: "spiky" },
+  ],
+};
+
+/** Color legend for the comparison vizzes, or null for non-comparison params. */
+export function vizLegend(key: string | null): VizLegendItem[] | null {
+  return key && LEGENDS[key] ? LEGENDS[key] : null;
+}
+
 function cssVar(name: string, fallback: string): string {
   return (
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() ||
