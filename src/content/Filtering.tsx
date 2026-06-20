@@ -6,13 +6,25 @@ import { CutoffChooserDemo } from "../components/CutoffChooserDemo";
 import { useUnits } from "../context/UnitsContext";
 import { formatLength, formatLateral, unitLabel } from "../lib/grades";
 
-export function FilteringCutoffs() {
+export function FilteringCutoffs({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const { unit } = useUnits();
   return (
     <Lesson
       title="Cutoffs & sampling length"
       intro="The cutoff is the single most consequential choice in a surface finish measurement — it decides what counts as roughness and what counts as waviness."
     >
+      <Callout label="In a hurry?">
+        Just need to pass a part? Skip the theory and go straight to{" "}
+        <button type="button" className="nav-link" onClick={() => onNavigate?.("filt-choosing")}>
+          Choosing a cutoff
+        </button>{" "}
+        for the filter-picker, or{" "}
+        <button type="button" className="nav-link" onClick={() => onNavigate?.("realworld")}>
+          Meeting Spec in the Real World
+        </button>
+        . This section explains the <em>why</em> behind filtering.
+      </Callout>
+
       <Callout label="The terms are synonyms">
         <strong>Cutoff</strong>, <strong>sampling length</strong>, and{" "}
         <strong>filter length</strong> all refer to the same wavelength, λc.

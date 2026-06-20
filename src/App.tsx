@@ -68,9 +68,9 @@ export default function App() {
       case "fund-chain":
         return <ProcessingChain />;
       case "realworld":
-        return <RealWorld />;
+        return <RealWorld onNavigate={navigate} />;
       case "filt-cutoffs":
-        return <FilteringCutoffs />;
+        return <FilteringCutoffs onNavigate={navigate} />;
       case "filt-fft":
         return <FilteringFFT />;
       case "filt-transmission":
@@ -139,7 +139,7 @@ export default function App() {
       case "tool-chart":
         return <ProcessComparison />;
       case "callouts":
-        return <Callouts />;
+        return <Callouts onNavigate={navigate} />;
       default:
         return <Overview />;
     }

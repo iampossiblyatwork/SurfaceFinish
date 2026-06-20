@@ -32,3 +32,43 @@ export function Callout({
     </aside>
   );
 }
+
+export interface NextStepItem {
+  id: string;
+  label: string;
+  note?: string;
+}
+
+/** Consistent "where to go next" footer so a reader is never stranded. */
+export function NextSteps({
+  onNavigate,
+  items,
+}: {
+  onNavigate?: (id: string) => void;
+  items: NextStepItem[];
+}) {
+  if (!onNavigate) return null;
+  return (
+    <nav className="next-steps" aria-label="Next steps">
+      <span className="next-steps-title">Next</span>
+      <div className="next-steps-list">
+        {items.map((it) => (
+          <button
+            key={it.id}
+            type="button"
+            className="next-step"
+            onClick={() => onNavigate(it.id)}
+          >
+            <span className="next-step-text">
+              <span className="next-step-label">{it.label}</span>
+              {it.note && <span className="next-step-note">{it.note}</span>}
+            </span>
+            <span className="next-step-arrow" aria-hidden>
+              →
+            </span>
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}

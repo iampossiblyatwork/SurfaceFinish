@@ -1,4 +1,4 @@
-import { Lesson, Callout } from "./Lesson";
+import { Lesson, Callout, NextSteps } from "./Lesson";
 
 // ─── ISO 1302 surface texture symbol SVG components ──────────────────────────
 //
@@ -142,7 +142,7 @@ const FORMAT = [
 
 // ─── Page component ───────────────────────────────────────────────────────────
 
-export function Callouts() {
+export function Callouts({ onNavigate }: { onNavigate?: (id: string) => void }) {
   return (
     <Lesson
       title="Callouts & Standards"
@@ -228,6 +228,14 @@ export function Callouts() {
         <li><strong>ISO 25178</strong> — Areal (3D) surface texture.</li>
         <li><strong>ISO 1302 / ASME B46.1</strong> — Indication of surface texture &amp; N-grades.</li>
       </ul>
+
+      <NextSteps
+        onNavigate={onNavigate}
+        items={[
+          { id: "realworld", label: "Meeting Spec in the Real World", note: "The callout gave no filter — now what?" },
+          { id: "filt-choosing", label: "Choosing a cutoff", note: "Pick the filter the drawing left off" },
+        ]}
+      />
     </Lesson>
   );
 }

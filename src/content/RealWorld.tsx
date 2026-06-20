@@ -1,6 +1,6 @@
-import { Lesson, Callout } from "./Lesson";
+import { Lesson, Callout, NextSteps } from "./Lesson";
 
-export function RealWorld() {
+export function RealWorld({ onNavigate }: { onNavigate?: (id: string) => void }) {
   return (
     <Lesson
       title="Meeting Spec in the Real World"
@@ -118,6 +118,15 @@ export function RealWorld() {
         to filter), confirm the trace is long enough, and document it. That's the
         whole job.
       </Callout>
+
+      <NextSteps
+        onNavigate={onNavigate}
+        items={[
+          { id: "callouts", label: "Callouts & Standards", note: "Read the symbol on the drawing" },
+          { id: "filt-choosing", label: "Choosing a cutoff", note: "Pick the filter, step by step" },
+          { id: "stylus", label: "Stylus Tip Geometry", note: "Why tiny features mechanically filter" },
+        ]}
+      />
 
       <p className="lesson-source">
         Built on ISO 4287 / 4288 / 3274; the judgement calls reflect shop-floor
