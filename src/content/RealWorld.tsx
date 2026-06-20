@@ -1,5 +1,38 @@
 import { Lesson, Callout, Details, NextSteps } from "./Lesson";
 
+// The "am I meeting spec?" decision as a flow — the key branch is whether the
+// feature is too small for a standard cutoff (→ report the Primary profile).
+function MeetingSpecFlow() {
+  return (
+    <div className="flow" aria-hidden="true">
+      <div className="flow-box">Bare callout — just a number</div>
+      <div className="flow-arrow">↓</div>
+      <div className="flow-box">
+        Assume it means <strong>Ra ≤ value</strong>
+      </div>
+      <div className="flow-arrow">↓</div>
+      <div className="flow-box flow-q">
+        Is the feature too small for a standard cutoff?
+      </div>
+      <div className="flow-branch">
+        <div className="flow-box flow-yes">
+          <span className="flow-tag">Yes</span>Report the{" "}
+          <strong>Primary (P)</strong> profile — it's already mechanically
+          filtered
+        </div>
+        <div className="flow-box flow-no">
+          <span className="flow-tag">No</span>Iterate to the right{" "}
+          <strong>λc</strong>, then check the trace is long enough
+        </div>
+      </div>
+      <div className="flow-arrow">↓</div>
+      <div className="flow-box flow-final">
+        Report the value <strong>and</strong> the filter you used
+      </div>
+    </div>
+  );
+}
+
 export function RealWorld({ onNavigate }: { onNavigate?: (id: string) => void }) {
   return (
     <Lesson
@@ -90,30 +123,33 @@ export function RealWorld({ onNavigate }: { onNavigate?: (id: string) => void })
 
       <h2>&ldquo;Am I meeting spec?&rdquo; — the short version</h2>
       <p>When all you have is a number, this is the pragmatic path:</p>
-      <ol className="lesson-steps">
-        <li>
-          <strong>Assume Ra.</strong> Read the number as Ra ≤ value unless the
-          drawing says otherwise.
-        </li>
-        <li>
-          <strong>Check the feature size.</strong> If it's tiny (O-ring groove,
-          narrow land), your trace is short and already mechanically filtered —
-          reporting the <strong>primary (P)</strong> profile is usually fine.
-        </li>
-        <li>
-          <strong>Otherwise pick the cutoff.</strong> Use the iterate method, or
-          the common defaults: 0.25&nbsp;mm for grinding, 0.8&nbsp;mm for turning
-          and milling.
-        </li>
-        <li>
-          <strong>Check the trace length.</strong> It must support the cutoff —
-          ideally five sampling lengths, at minimum one.
-        </li>
-        <li>
-          <strong>Report the number and the filter you used.</strong> If the
-          drawing didn't specify it, write down what you did.
-        </li>
-      </ol>
+      <MeetingSpecFlow />
+      <Details summary="The same path, step by step">
+        <ol className="lesson-steps">
+          <li>
+            <strong>Assume Ra.</strong> Read the number as Ra ≤ value unless the
+            drawing says otherwise.
+          </li>
+          <li>
+            <strong>Check the feature size.</strong> If it's tiny (O-ring groove,
+            narrow land), your trace is short and already mechanically filtered —
+            reporting the <strong>primary (P)</strong> profile is usually fine.
+          </li>
+          <li>
+            <strong>Otherwise pick the cutoff.</strong> Use the iterate method, or
+            the common defaults: 0.25&nbsp;mm for grinding, 0.8&nbsp;mm for turning
+            and milling.
+          </li>
+          <li>
+            <strong>Check the trace length.</strong> It must support the cutoff —
+            ideally five sampling lengths, at minimum one.
+          </li>
+          <li>
+            <strong>Report the number and the filter you used.</strong> If the
+            drawing didn't specify it, write down what you did.
+          </li>
+        </ol>
+      </Details>
       <Callout label="You don't have to become a surface-finish scientist">
         The goal isn't a PhD in metrology — it's a repeatable, defensible procedure
         that answers one question: <strong>does this part pass?</strong> Assume Ra,

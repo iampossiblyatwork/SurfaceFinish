@@ -930,6 +930,67 @@ input[type="range"] {
 .lesson-callout p:last-child {
   margin-bottom: 0;
 }
+/* ---- Decision flow diagram ---- */
+.flow {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  margin: 8px 0 16px;
+}
+.flow-box {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: var(--surface-2);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  text-align: center;
+}
+.flow-arrow {
+  text-align: center;
+  color: var(--muted);
+  line-height: 1;
+  font-size: 0.9rem;
+}
+.flow-q {
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.flow-branch {
+  display: flex;
+  gap: 8px;
+}
+.flow-branch .flow-box {
+  flex: 1;
+  text-align: left;
+}
+.flow-yes {
+  border-left: 3px solid var(--good);
+}
+.flow-no {
+  border-left: 3px solid var(--accent);
+}
+.flow-final {
+  border-color: var(--good);
+  font-weight: 600;
+}
+.flow-tag {
+  font-weight: 700;
+  margin-right: 6px;
+}
+.flow-yes .flow-tag {
+  color: var(--good);
+}
+.flow-no .flow-tag {
+  color: var(--accent);
+}
+@media (max-width: 520px) {
+  .flow-branch {
+    flex-direction: column;
+  }
+}
+
 /* ---- Collapsible (progressive disclosure) ---- */
 .lesson-details {
   border: 1px solid var(--border);
