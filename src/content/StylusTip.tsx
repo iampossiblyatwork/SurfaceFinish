@@ -10,14 +10,20 @@ const FONT = "system-ui, sans-serif";
 // define it. (Path: left flank → bottom sphere arc → right flank.)
 function TipGeometry() {
   return (
-    <svg viewBox="0 0 220 162" className="stylus-fig" role="img" aria-label="Stylus tip: a conisphere — a cone blending into a spherical tip of radius r">
+    <svg viewBox="0 0 220 162" className="stylus-fig" role="img" aria-label="Stylus tip: a conisphere — a cone blending into a spherical tip of radius r, with the tip-radius circle inscribed at the apex">
+      {/* Inscribed tip sphere — the circle that defines the tip radius (as
+          annotated on an SEM of a real stylus). */}
+      <circle cx={110} cy={108} r={24} fill="none" stroke={mu} strokeWidth={1} opacity={0.55} />
       <path
         d="M 33.2,23 L 89.2,120 A 24,24 0 0 1 130.8,120 L 186.8,23"
         fill="none" stroke={acc} strokeWidth={2.3} strokeLinejoin="round" strokeLinecap="round"
       />
       <line x1={18} y1={132} x2={202} y2={132} stroke={mu} strokeWidth={2} strokeLinecap="round" />
-      <line x1={110} y1={108} x2={123.8} y2={127.7} stroke={good} strokeWidth={1.6} />
-      <text x={130} y={126} fill={good} fontSize={13} fontWeight="bold" fontFamily={FONT}>r</text>
+      {/* radius arrow, centre → circle */}
+      <line x1={110} y1={108} x2={127} y2={91} stroke={good} strokeWidth={1.6} />
+      <line x1={127} y1={91} x2={125.2} y2={97.8} stroke={good} strokeWidth={1.6} strokeLinecap="round" />
+      <line x1={127} y1={91} x2={120.2} y2={92.8} stroke={good} strokeWidth={1.6} strokeLinecap="round" />
+      <text x={108} y={102} fill={good} fontSize={13} fontWeight="bold" textAnchor="end" fontFamily={FONT}>r</text>
       <text x={110} y={18} fill={mu} fontSize={12} textAnchor="middle" fontFamily={FONT}>cone angle 60–90°</text>
       <text x={110} y={150} fill={mu} fontSize={11} textAnchor="middle" fontFamily={FONT}>workpiece surface</text>
     </svg>
