@@ -6,6 +6,37 @@ import { CutoffChooserDemo } from "../components/CutoffChooserDemo";
 import { useUnits } from "../context/UnitsContext";
 import { formatLength, formatLateral, unitLabel } from "../lib/grades";
 
+// Labelled sine wave: amplitude (A, height to a peak) and wavelength (λ,
+// peak-to-peak) — the two numbers that define each component of a surface.
+function SineAnatomy() {
+  const acc = "var(--accent)";
+  const good = "var(--good)";
+  const mu = "var(--muted)";
+  const mean = 80;
+  const amp = 42;
+  const per = 130;
+  const sine = Array.from({ length: 121 }, (_, i) => {
+    const x = 10 + (340 * i) / 120;
+    const y = mean - amp * Math.sin((2 * Math.PI * (x - 10)) / per);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  const p1 = 42.5;
+  const p2 = 172.5;
+  const ytop = 18;
+  return (
+    <svg viewBox="0 0 360 150" className="stylus-fig wide" role="img" aria-label="A sine wave labelled with amplitude A and wavelength λ">
+      <line x1={10} y1={mean} x2={350} y2={mean} stroke={mu} strokeWidth={1.5} />
+      <polyline points={sine} fill="none" stroke={acc} strokeWidth={2.4} strokeLinejoin="round" />
+      <line x1={p1} y1={mean} x2={p1} y2={mean - amp} stroke={good} strokeWidth={1.8} />
+      <text x={p1 + 7} y={mean - amp / 2 + 4} fill={good} fontSize={14} fontWeight="bold" fontFamily="system-ui, sans-serif">A</text>
+      <line x1={p1} y1={mean - amp} x2={p1} y2={ytop} stroke={mu} strokeWidth={1} strokeDasharray="3 3" />
+      <line x1={p2} y1={mean - amp} x2={p2} y2={ytop} stroke={mu} strokeWidth={1} strokeDasharray="3 3" />
+      <line x1={p1} y1={ytop} x2={p2} y2={ytop} stroke={good} strokeWidth={1.8} />
+      <text x={(p1 + p2) / 2} y={ytop - 4} fill={good} fontSize={14} fontWeight="bold" textAnchor="middle" fontFamily="system-ui, sans-serif">λ</text>
+    </svg>
+  );
+}
+
 export function FilteringCutoffs({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const { unit } = useUnits();
   return (
@@ -76,12 +107,14 @@ export function FilteringFFT() {
       intro="Filtering only makes sense once you see a surface as a stack of sine waves. The Fourier transform is the tool that pulls them apart."
     >
       <h2>Anatomy of a sine wave</h2>
-      <ul>
-        <li><strong>A — amplitude:</strong> distance from the reference line to a peak or valley.</li>
-        <li><strong>λ — wavelength</strong> (λ = 2π/B): higher frequency means shorter wavelength.</li>
-        <li><strong>C — phase shift:</strong> where the wave crosses the axis.</li>
-        <li><strong>D — vertical shift:</strong> offset from the origin.</li>
-      </ul>
+      <figure className="lesson-figure">
+        <SineAnatomy />
+        <figcaption>
+          Two numbers define each wave: <strong>amplitude A</strong> (height to a
+          peak) and <strong>wavelength λ</strong> (peak to peak). Phase shifts it
+          sideways; a vertical shift moves the whole wave up or down.
+        </figcaption>
+      </figure>
 
       <h2>Adding waves</h2>
       <p>
