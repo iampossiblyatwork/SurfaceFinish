@@ -1,6 +1,30 @@
 import { Lesson, Callout } from "./Lesson";
 import processingChain from "../assets/processing-chain.png";
 
+// A small hero: a roughness trace with its deviation area shaded — the picture
+// behind the page's first sentence ("Ra is one number from a trace").
+function HeroTrace() {
+  const mean = 58;
+  const v = (t: number) =>
+    Math.sin(2 * Math.PI * 4 * t) +
+    0.5 * Math.sin(2 * Math.PI * 9 * t + 1) +
+    0.25 * Math.sin(2 * Math.PI * 15 * t + 2);
+  const pts = Array.from({ length: 161 }, (_, i) => {
+    const x = 10 + (340 * i) / 160;
+    const y = mean - 19 * v(i / 160);
+    return [x, y] as const;
+  });
+  const line = pts.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+  const area = `10,${mean} ${line} 350,${mean}`;
+  return (
+    <svg viewBox="0 0 360 108" className="hero-trace" role="img" aria-label="A surface roughness trace about its mean line">
+      <polygon points={area} fill="var(--good)" opacity={0.22} />
+      <line x1={10} y1={mean} x2={350} y2={mean} stroke="var(--muted)" strokeWidth={1} strokeDasharray="4 3" />
+      <polyline points={line} fill="none" stroke="var(--accent)" strokeWidth={2.2} strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function Overview({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const go = (id: string) => () => onNavigate?.(id);
   return (
@@ -8,6 +32,8 @@ export function Overview({ onNavigate }: { onNavigate?: (id: string) => void }) 
       title="What is surface finish?"
       intro="Ask for “the surface finish” and you're almost always being asked for Ra — one number pulled from a measured trace. This reference shows where that number comes from and what the others mean."
     >
+      <HeroTrace />
+
       <h2>Ra in one line</h2>
       <p>
         Ra is the average roughness height — easy to compare and universally

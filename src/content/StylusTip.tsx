@@ -5,20 +5,21 @@ const good = "var(--good)";
 const mu = "var(--muted)";
 const FONT = "system-ui, sans-serif";
 
-// Diamond cone ending in a spherical tip: the two defining numbers are the tip
-// radius (the circle) and the cone angle (between the flanks).
+// The tip is a conisphere: a diamond cone whose flanks blend tangentially into a
+// spherical tip of radius r. Those two numbers — cone angle and tip radius —
+// define it. (Path: left flank → bottom sphere arc → right flank.)
 function TipGeometry() {
-  const flank = { stroke: acc, strokeWidth: 2.2, fill: "none", strokeLinecap: "round" as const };
   return (
-    <svg viewBox="0 0 220 168" className="stylus-fig" role="img" aria-label="Stylus tip: a cone ending in a spherical tip of radius r">
-      <line x1={92.7} y1={106} x2={35.2} y2={10} {...flank} />
-      <line x1={127.3} y1={106} x2={184.8} y2={10} {...flank} />
-      <circle cx={110} cy={116} r={20} {...flank} />
-      <line x1={18} y1={136} x2={202} y2={136} stroke={mu} strokeWidth={2} strokeLinecap="round" />
-      <line x1={110} y1={116} x2={125.3} y2={128.9} stroke={good} strokeWidth={1.6} />
-      <text x={134} y={132} fill={good} fontSize={13} fontWeight="bold" fontFamily={FONT}>r</text>
-      <text x={110} y={28} fill={mu} fontSize={12} textAnchor="middle" fontFamily={FONT}>cone angle 60–90°</text>
-      <text x={110} y={152} fill={mu} fontSize={11} textAnchor="middle" fontFamily={FONT}>workpiece surface</text>
+    <svg viewBox="0 0 220 162" className="stylus-fig" role="img" aria-label="Stylus tip: a conisphere — a cone blending into a spherical tip of radius r">
+      <path
+        d="M 33.2,23 L 89.2,120 A 24,24 0 0 1 130.8,120 L 186.8,23"
+        fill="none" stroke={acc} strokeWidth={2.3} strokeLinejoin="round" strokeLinecap="round"
+      />
+      <line x1={18} y1={132} x2={202} y2={132} stroke={mu} strokeWidth={2} strokeLinecap="round" />
+      <line x1={110} y1={108} x2={123.8} y2={127.7} stroke={good} strokeWidth={1.6} />
+      <text x={130} y={126} fill={good} fontSize={13} fontWeight="bold" fontFamily={FONT}>r</text>
+      <text x={110} y={18} fill={mu} fontSize={12} textAnchor="middle" fontFamily={FONT}>cone angle 60–90°</text>
+      <text x={110} y={150} fill={mu} fontSize={11} textAnchor="middle" fontFamily={FONT}>workpiece surface</text>
     </svg>
   );
 }
@@ -63,7 +64,8 @@ export function StylusTip() {
       <figure className="lesson-figure">
         <TipGeometry />
         <figcaption>
-          A diamond cone ending in a spherical tip. Two numbers define it: the{" "}
+          A diamond cone that blends into a spherical tip — a{" "}
+          <strong>conisphere</strong>. Two numbers define it: the{" "}
           <strong>tip radius r</strong> (2, 5, or 10&nbsp;µm) and the{" "}
           <strong>cone angle</strong> (typically 60° or 90°).
         </figcaption>
