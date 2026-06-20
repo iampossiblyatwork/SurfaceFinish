@@ -7,6 +7,7 @@ import { FinishGallery } from "./components/FinishGallery";
 import { Generator } from "./components/Generator";
 import { CompareView } from "./components/CompareView";
 import { ProcessComparison } from "./components/ProcessComparison";
+import { QuickFind } from "./components/QuickFind";
 import { Overview, ProcessingChain } from "./content/Fundamentals";
 import {
   FilteringCutoffs,
@@ -18,13 +19,20 @@ import { ThreeD } from "./content/ThreeD";
 import { StylusTip } from "./content/StylusTip";
 import { Callouts } from "./content/Callouts";
 import { RealWorld } from "./content/RealWorld";
-import { pageLabel, parseHash, routeToHash } from "./data/navigation";
+import {
+  pageForCategory,
+  pageLabel,
+  parseHash,
+  routeToHash,
+} from "./data/navigation";
+import type { ParameterCategory } from "./data/parameters";
 import { api, type FinishSummary, type ParameterDef } from "./api/client";
 import type { Finish } from "./data/finishes";
 
 export default function App() {
   const [route, setRoute] = useState(() => parseHash(window.location.hash));
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
   const [generatorFinishId, setGeneratorFinishId] = useState<string | undefined>(undefined);
   const [finishes, setFinishes] = useState<FinishSummary[]>([]);
   const [families, setFamilies] = useState<string[]>([]);
@@ -53,6 +61,19 @@ export default function App() {
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  // "/" opens the parameter finder from anywhere (unless you're typing).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+      e.preventDefault();
+      setFindOpen(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   const navigate = (pageId: string, anchor?: string) => {
@@ -187,7 +208,18 @@ export default function App() {
               <span className="app-title-sub">{pageLabel(page) || "Reference"}</span>
             </div>
           </div>
-          <UnitsToggle />
+          <div className="app-header-right">
+            <button
+              type="button"
+              className="header-find"
+              aria-label="Find a parameter"
+              onClick={() => setFindOpen(true)}
+            >
+              <span aria-hidden>⌕</span>
+              <span className="header-find-text">Find</span>
+            </button>
+            <UnitsToggle />
+          </div>
         </header>
 
         <div className="app-body">
@@ -199,6 +231,20 @@ export default function App() {
           />
           <main className="app-main">{renderPage()}</main>
         </div>
+
+        {findOpen && (
+          <QuickFind
+            parameters={parameters}
+            onClose={() => setFindOpen(false)}
+            onPick={(p) => {
+              setFindOpen(false);
+              navigate(
+                pageForCategory(p.category as ParameterCategory),
+                p.symbol,
+              );
+            }}
+          />
+        )}
       </div>
     </UnitsProvider>
   );
