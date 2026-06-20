@@ -1,4 +1,4 @@
-import { Lesson, Callout, NextSteps } from "./Lesson";
+import { Lesson, Callout, Details, NextSteps } from "./Lesson";
 
 // ─── ISO 1302 surface texture symbol SVG components ──────────────────────────
 //
@@ -194,7 +194,7 @@ export function Callouts({ onNavigate }: { onNavigate?: (id: string) => void }) 
         </figure>
       </div>
 
-      <h2>Parameter specification format</h2>
+      <Details summary="Parameter specification format (the D F S-L / R Z N C V string)">
       <p>The "a"/"b" field follows the form <code>D&nbsp;F&nbsp;S-L / R&nbsp;Z&nbsp;N&nbsp;C&nbsp;V</code>:</p>
       <table className="lesson-table">
         <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
@@ -209,8 +209,9 @@ export function Callouts({ onNavigate }: { onNavigate?: (id: string) => void }) 
         filter, λs&nbsp;0.0025&nbsp;mm to λc&nbsp;0.8&nbsp;mm, roughness profile,
         Rz parameter, 5 sampling lengths, max rule, value 3.2&nbsp;µm.
       </Callout>
+      </Details>
 
-      <h2>Lay direction symbols (field d)</h2>
+      <Details summary="Lay direction symbols (field d)">
       <table className="lesson-table">
         <thead><tr><th>Symbol</th><th>Lay direction</th></tr></thead>
         <tbody>
@@ -219,6 +220,7 @@ export function Callouts({ onNavigate }: { onNavigate?: (id: string) => void }) 
           ))}
         </tbody>
       </table>
+      </Details>
 
       <h2>Relevant standards</h2>
       <ul className="lesson-standards">

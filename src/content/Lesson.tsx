@@ -33,6 +33,23 @@ export function Callout({
   );
 }
 
+/** Native collapsible for progressive disclosure — keeps depth without the wall
+ *  of text. Accessible and keyboard-operable with no JS. */
+export function Details({
+  summary,
+  children,
+}: {
+  summary: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="lesson-details">
+      <summary>{summary}</summary>
+      <div className="lesson-details-body">{children}</div>
+    </details>
+  );
+}
+
 export interface NextStepItem {
   id: string;
   label: string;

@@ -908,6 +908,39 @@ input[type="range"] {
 .lesson-callout p:last-child {
   margin-bottom: 0;
 }
+/* ---- Collapsible (progressive disclosure) ---- */
+.lesson-details {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0 0 14px;
+  background: var(--surface-2);
+}
+.lesson-details > summary {
+  cursor: pointer;
+  padding: 11px 14px;
+  font-weight: 700;
+  color: var(--accent);
+  list-style: none;
+}
+.lesson-details > summary::-webkit-details-marker {
+  display: none;
+}
+.lesson-details > summary::before {
+  content: "▸";
+  color: var(--muted);
+  margin-right: 8px;
+  display: inline-block;
+}
+.lesson-details[open] > summary::before {
+  content: "▾";
+}
+.lesson-details-body {
+  padding: 0 14px 6px;
+}
+.lesson-details-body > :first-child {
+  margin-top: 0;
+}
+
 /* ---- Next-steps footer ---- */
 .next-steps {
   margin: 22px 0 8px;

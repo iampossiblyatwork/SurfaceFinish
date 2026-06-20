@@ -1,4 +1,4 @@
-import { Lesson, Callout, NextSteps } from "./Lesson";
+import { Lesson, Callout, Details, NextSteps } from "./Lesson";
 
 export function RealWorld({ onNavigate }: { onNavigate?: (id: string) => void }) {
   return (
@@ -22,7 +22,7 @@ export function RealWorld({ onNavigate }: { onNavigate?: (id: string) => void })
         you.
       </Callout>
 
-      <h2>The short-feature trap</h2>
+      <Details summary="The short-feature trap — tiny bores and O-ring grooves">
       <p>
         Now suppose that callout is tagged to an <strong>O-ring groove</strong> —
         maybe a quarter of a millimetre to a millimetre wide. You work the diamond
@@ -48,8 +48,9 @@ export function RealWorld({ onNavigate }: { onNavigate?: (id: string) => void })
         simply can't host that. (See <em>Stylus Tip Geometry</em> for the physical
         side and <em>Cutoffs &amp; sampling length</em> for the math.)
       </Callout>
+      </Details>
 
-      <h2>Primary, waviness, roughness — and when &ldquo;no filter&rdquo; is fine</h2>
+      <Details summary="Primary, waviness, roughness — and when 'no filter' is fine">
       <p>
         There are three profiles you can report: the{" "}
         <strong>Primary (P)</strong> profile — the trace with only the short λs
@@ -66,8 +67,9 @@ export function RealWorld({ onNavigate }: { onNavigate?: (id: string) => void })
         <em> can</em> always push a 0.8&nbsp;mm filter on and watch Ra tick down a
         little — but on a short trace that's cosmetic, not physics.
       </p>
+      </Details>
 
-      <h2>When the drawing gives you no filter</h2>
+      <Details summary="When the drawing gives you no filter (≈99% of the time)">
       <p>
         Which is the usual case — <strong>roughly ninety-nine times out of a
         hundred</strong> the cutoff isn't on the drawing. That leaves the choice to
@@ -84,6 +86,7 @@ export function RealWorld({ onNavigate }: { onNavigate?: (id: string) => void })
         borderline parts start passing. It works right up until an audit asks how
         you measured — which is exactly why the converge method exists.
       </Callout>
+      </Details>
 
       <h2>&ldquo;Am I meeting spec?&rdquo; — the short version</h2>
       <p>When all you have is a number, this is the pragmatic path:</p>
