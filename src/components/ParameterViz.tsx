@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Profile } from "../api/client";
 
 /** Which annotation style each parameter uses, keyed by its compute key. */
@@ -70,12 +70,16 @@ export function vizLegend(key: string | null): VizLegendItem[] | null {
 }
 
 /**
- * Abbott–Firestone (material-ratio) curve: sort the profile heights from the
- * highest peak down and you get the bearing-area curve — a long plateau (broad
- * load-bearing area near the top) then a steep drop into the valleys. Static,
- * illustrative; used for the curve-based Rmr(c) parameter which has no live viz.
+ * Abbott–Firestone (material-ratio) curve, interactive: sort the profile heights
+ * from the highest peak down and you get the bearing-area curve — a long plateau
+ * (broad load-bearing area near the top) then a steep drop into the valleys.
+ * Drag the "lapping plane" down through the profile and a marker slides along the
+ * curve to the matching bearing ratio, teaching Rmr(c) directly: the fraction of
+ * the surface sitting at or above a given depth. The teaching profile is
+ * deterministic; only the plane depth is interactive.
  */
 export function AbbottCurve() {
+  const [depthFrac, setDepthFrac] = useState(0.3);
   const mid = 75;
   const N = 240;
   const fn = (t: number) => {
@@ -91,23 +95,81 @@ export function AbbottCurve() {
   if (mx === 0) mx = 1;
   const scale = 58 / (mx * 1.08);
   const splitX = 150;
+
+  // Height extremes set the depth axis: depthFrac 0 = highest peak, 1 = deepest
+  // valley. The lapping plane sits at planeHeight; everything above it is the
+  // material currently in bearing contact.
+  let hi = z[0];
+  let lo = z[0];
+  for (const x of z) {
+    if (x > hi) hi = x;
+    if (x < lo) lo = x;
+  }
+  const span = hi - lo || 1;
+  const planeHeight = hi - depthFrac * span;
+  const yPlane = mid - planeHeight * scale;
+
+  // Rmr(c): fraction of the surface at or above the plane — rises from ~0 % at
+  // the peak to 100 % at the deepest valley as the plane laps downward.
+  let above = 0;
+  for (const x of z) if (x >= planeHeight) above++;
+  const mr = above / z.length;
+
+  const profX = (i: number) => 10 + ((splitX - 28) * i) / N;
   const prof = z
-    .map((zz, i) => `${(10 + ((splitX - 28) * i) / N).toFixed(1)},${(mid - zz * scale).toFixed(1)}`)
+    .map((zz, i) => `${profX(i).toFixed(1)},${(mid - zz * scale).toFixed(1)}`)
     .join(" ");
+
+  // Cap shaded between the profile and the plane, only where the profile rises
+  // above it — the material the lapping plane would shave off first.
+  const x0 = profX(0);
+  const x1 = profX(N);
+  const cap = z
+    .map((zz, i) => `${profX(i).toFixed(1)},${Math.min(mid - zz * scale, yPlane).toFixed(1)}`)
+    .join(" ");
+  const capArea = `${cap} ${x1.toFixed(1)},${yPlane.toFixed(1)} ${x0.toFixed(1)},${yPlane.toFixed(1)}`;
+
+  // Bearing-area curve = heights sorted high→low; the plane meets it at x = mr.
   const zs = [...z].sort((a, b) => b - a);
   const distW = 350 - splitX - 4;
   const curve = zs
     .map((zz, k) => `${(splitX + (distW * k) / N).toFixed(1)},${(mid - zz * scale).toFixed(1)}`)
     .join(" ");
+  const markerX = splitX + distW * mr;
+  const pct = Math.round(mr * 100);
+
   return (
-    <svg viewBox="0 0 360 152" className="stylus-fig wide" role="img" aria-label="Abbott–Firestone bearing-area curve beside a plateau profile">
-      <line x1={10} y1={mid} x2={splitX - 8} y2={mid} stroke="var(--muted)" strokeWidth={1} strokeDasharray="4 3" />
-      <polyline points={prof} fill="none" stroke="var(--accent)" strokeWidth={1.4} strokeLinejoin="round" />
-      <line x1={splitX} y1={14} x2={splitX} y2={132} stroke="var(--grid)" strokeWidth={1} />
-      <polyline points={curve} fill="none" stroke="var(--good)" strokeWidth={2.2} strokeLinejoin="round" />
-      <text x={splitX + 2} y={148} fill="var(--muted)" fontSize={10} fontFamily="system-ui, sans-serif">0%</text>
-      <text x={350} y={148} fill="var(--muted)" fontSize={10} textAnchor="end" fontFamily="system-ui, sans-serif">100% material ratio</text>
-    </svg>
+    <div className="abbott">
+      <svg viewBox="0 0 360 152" className="stylus-fig wide" role="img" aria-label="Interactive Abbott–Firestone bearing-area curve with a lapping plane swept through the profile">
+        <line x1={10} y1={mid} x2={splitX - 8} y2={mid} stroke="var(--muted)" strokeWidth={1} strokeDasharray="4 3" />
+        <polygon points={capArea} fill="var(--good)" opacity={0.28} />
+        <polyline points={prof} fill="none" stroke="var(--accent)" strokeWidth={1.4} strokeLinejoin="round" />
+        {/* Lapping plane on the profile, and a faint tie-line across to the curve. */}
+        <line x1={x0} y1={yPlane} x2={x1} y2={yPlane} stroke="var(--good)" strokeWidth={1.6} strokeDasharray="5 3" />
+        <line x1={x1} y1={yPlane} x2={markerX} y2={yPlane} stroke="var(--muted)" strokeWidth={1} strokeDasharray="2 3" />
+        <line x1={splitX} y1={14} x2={splitX} y2={132} stroke="var(--grid)" strokeWidth={1} />
+        <polyline points={curve} fill="none" stroke="var(--good)" strokeWidth={2.2} strokeLinejoin="round" />
+        {/* Marker where the plane crosses the bearing curve, dropped to the axis. */}
+        <line x1={markerX} y1={yPlane} x2={markerX} y2={134} stroke="var(--accent)" strokeWidth={1} strokeDasharray="2 3" />
+        <circle cx={markerX} cy={yPlane} r={3.5} fill="var(--accent)" />
+        <text x={splitX + 2} y={148} fill="var(--muted)" fontSize={10} fontFamily="system-ui, sans-serif">0%</text>
+        <text x={350} y={148} fill="var(--muted)" fontSize={10} textAnchor="end" fontFamily="system-ui, sans-serif">100% material ratio</text>
+      </svg>
+      <div className="abbott-control">
+        <span className="abbott-readout">
+          Rmr(c) ≈ <strong>{pct}%</strong> bearing at this depth
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.005}
+          value={depthFrac}
+          onChange={(e) => setDepthFrac(Number(e.target.value))}
+          aria-label="Lapping plane depth"
+        />
+      </div>
+    </div>
   );
 }
 
