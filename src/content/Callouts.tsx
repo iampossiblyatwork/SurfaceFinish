@@ -251,9 +251,20 @@ export function Callouts({ onNavigate }: { onNavigate?: (id: string) => void }) 
           curve's fast early rise is what the callout is buying.
         </p>
         <Callout label="See it live">
-          On the <strong>Material ratio curve</strong> page you can drag the
-          lapping plane through a profile and watch Rmr(c) and the section depth c
-          move together against the same 90% line.
+          On the{" "}
+          {onNavigate ? (
+            <button
+              type="button"
+              className="lesson-link"
+              onClick={() => onNavigate("prof-material")}
+            >
+              Material ratio curve
+            </button>
+          ) : (
+            <strong>Material ratio curve</strong>
+          )}{" "}
+          page you can drag the lapping plane through a profile and watch Rmr(c)
+          and the section depth c move together against the same 90% line.
         </Callout>
       </Details>
 

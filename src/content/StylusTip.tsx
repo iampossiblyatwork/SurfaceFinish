@@ -15,7 +15,7 @@ function TipGeometry() {
           annotated on an SEM of a real stylus). */}
       <circle cx={110} cy={108} r={24} fill="none" stroke={mu} strokeWidth={1} opacity={0.55} />
       <path
-        d="M 33.2,23 L 89.2,120 A 24,24 0 0 1 130.8,120 L 186.8,23"
+        d="M 33.2,23 L 89.2,120 A 24,24 0 0 0 130.8,120 L 186.8,23"
         fill="none" stroke={acc} strokeWidth={2.3} strokeLinejoin="round" strokeLinecap="round"
       />
       <line x1={18} y1={132} x2={202} y2={132} stroke={mu} strokeWidth={2} strokeLinecap="round" />
