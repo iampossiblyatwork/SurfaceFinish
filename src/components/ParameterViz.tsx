@@ -116,6 +116,18 @@ export function AbbottCurve() {
   const mr = above / z.length;
 
   const profX = (i: number) => 10 + ((splitX - 28) * i) / N;
+
+  // Bearing intercepts (A, B, C, … in the classic mr = (A+B+C+…)/L diagram):
+  // contiguous runs where the profile sits at or above the plane. Their summed
+  // length over L is exactly Rmr(c), since the threshold matches `above`.
+  const intercepts: Array<[number, number]> = [];
+  for (let i = 0; i <= N; i++) {
+    if (z[i] >= planeHeight) {
+      const start = i;
+      while (i <= N && z[i] >= planeHeight) i++;
+      intercepts.push([start, i - 1]);
+    }
+  }
   const prof = z
     .map((zz, i) => `${profX(i).toFixed(1)},${(mid - zz * scale).toFixed(1)}`)
     .join(" ");
@@ -144,9 +156,21 @@ export function AbbottCurve() {
         <line x1={10} y1={mid} x2={splitX - 8} y2={mid} stroke="var(--muted)" strokeWidth={1} strokeDasharray="4 3" />
         <polygon points={capArea} fill="var(--good)" opacity={0.28} />
         <polyline points={prof} fill="none" stroke="var(--accent)" strokeWidth={1.4} strokeLinejoin="round" />
-        {/* Lapping plane on the profile, and a faint tie-line across to the curve. */}
-        <line x1={x0} y1={yPlane} x2={x1} y2={yPlane} stroke="var(--good)" strokeWidth={1.6} strokeDasharray="5 3" />
+        {/* Lapping plane (thin accent reference) and a faint tie-line to the curve. */}
+        <line x1={x0} y1={yPlane} x2={x1} y2={yPlane} stroke="var(--accent)" strokeWidth={1.2} strokeDasharray="4 3" />
         <line x1={x1} y1={yPlane} x2={markerX} y2={yPlane} stroke="var(--muted)" strokeWidth={1} strokeDasharray="2 3" />
+        {/* Bearing intercepts (A+B+C+…): the lengths summed into Rmr(c). */}
+        {intercepts.map(([a, b], k) => {
+          const xa = profX(a);
+          const xb = profX(b);
+          return (
+            <g key={k} stroke="var(--good)" strokeWidth={3.4} strokeLinecap="round">
+              <line x1={xa} y1={yPlane} x2={xb} y2={yPlane} />
+              <line x1={xa} y1={yPlane - 3.5} x2={xa} y2={yPlane + 3.5} strokeWidth={1.6} />
+              <line x1={xb} y1={yPlane - 3.5} x2={xb} y2={yPlane + 3.5} strokeWidth={1.6} />
+            </g>
+          );
+        })}
         <line x1={splitX} y1={14} x2={splitX} y2={132} stroke="var(--grid)" strokeWidth={1} />
         <polyline points={curve} fill="none" stroke="var(--good)" strokeWidth={2.2} strokeLinejoin="round" />
         {/* Marker where the plane crosses the bearing curve, dropped to the axis. */}
@@ -157,7 +181,7 @@ export function AbbottCurve() {
       </svg>
       <div className="abbott-control">
         <span className="abbott-readout">
-          Rmr(c) ≈ <strong>{pct}%</strong> bearing at this depth
+          Bearing length = <strong>{pct}%</strong> of L — Rmr(c) at this depth
         </span>
         <input
           type="range"

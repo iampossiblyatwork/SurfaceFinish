@@ -90,7 +90,9 @@ export function ParameterCard({
           <AbbottCurve />
           <p className="param-viz-caption">
             Sort every height from the highest peak down: a long load-bearing
-            plateau, then a steep drop into the oil-retaining valleys.
+            plateau, then a steep drop into the oil-retaining valleys. The
+            highlighted intercepts where the surface meets the plane sum to that
+            depth's bearing ratio.
           </p>
         </>
       )}
