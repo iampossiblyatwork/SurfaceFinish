@@ -50,6 +50,9 @@ export interface RoughnessParameters {
   Rc: number;
   RSm: number;
   RDq: number;
+  Rk: number;
+  Rpk: number;
+  Rvk: number;
 }
 
 export interface TraceResponse {

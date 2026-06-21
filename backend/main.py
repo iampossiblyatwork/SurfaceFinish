@@ -107,6 +107,9 @@ def _generate_trace(req: GenerateRequest) -> dict:
             "Rc": params.Rc,
             "RSm": params.RSm,
             "RDq": params.RDq,
+            "Rk": params.Rk,
+            "Rpk": params.Rpk,
+            "Rvk": params.Rvk,
         },
         "grade": grade.grade,
     }

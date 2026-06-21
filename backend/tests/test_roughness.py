@@ -147,7 +147,7 @@ def test_api_parameters():
     r = client.get("/api/parameters")
     assert r.status_code == 200
     data = r.json()
-    assert len(data["parameters"]) == 12
+    assert len(data["parameters"]) == 15
 
 
 def test_api_generate():

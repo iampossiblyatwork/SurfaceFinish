@@ -104,4 +104,25 @@ PARAMETERS: list[ParameterDef] = [
         meaning="The bearing-area curve: at each depth c below the highest peak it gives the percentage of solid material. Its S-shape reveals running-in behavior — a curve that rises quickly means broad load-bearing plateaus near the top.",
         formula="Rmr(c) = (length of material at depth c) / L × 100%",
     ),
+    ParameterDef(
+        symbol="Rk", name="Core roughness depth",
+        category="material-ratio", dimension="2D", unitType="height", key="Rk",
+        summary="Height of the load-bearing core, with isolated peaks and valleys excluded.",
+        meaning="Found by sliding a secant spanning 40% of the material ratio across the bearing-area curve to locate its flattest span (the core), then extending that line to 0% and 100% material ratio. Rk is the vertical distance between those two extensions — the roughness depth of the surface once outlying peaks and valleys are stripped out. Used with Rpk and Rvk on plateau-honed and running surfaces (ISO 13565-2).",
+        formula="Rk = c(Mr1) − c(Mr2), the depth spanned by the core line",
+    ),
+    ParameterDef(
+        symbol="Rpk", name="Reduced peak height",
+        category="material-ratio", dimension="2D", unitType="height", key="Rpk",
+        summary="Height of peaks protruding above the core that wear off quickly.",
+        meaning="Models the material above the core line (up to material ratio Mr1) as a right triangle of equivalent area. These peaks carry little load and are typically worn flat almost immediately in service — a high Rpk on a new part often predicts a fast initial running-in.",
+        formula="Rpk = 2·A1 / Mr1 (A1 = area above the core line, 0–Mr1)",
+    ),
+    ParameterDef(
+        symbol="Rvk", name="Reduced valley depth",
+        category="material-ratio", dimension="2D", unitType="height", key="Rvk",
+        summary="Depth of valleys below the core that retain lubricant.",
+        meaning="Models the material below the core line (past material ratio Mr2) as a right triangle of equivalent area. A high Rvk means deep oil-retaining valleys persist below the load-bearing core — desirable on cylinder bores and seal faces, undesirable where it traps debris.",
+        formula="Rvk = 2·A2 / (100% − Mr2) (A2 = area below the core line, Mr2–100%)",
+    ),
 ]

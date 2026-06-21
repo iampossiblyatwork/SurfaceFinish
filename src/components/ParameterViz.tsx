@@ -14,6 +14,9 @@ const VIZ: Record<string, string> = {
   Rsk: "skewCompare",
   Rku: "kurtCompare",
   RDq: "slope",
+  Rk: "core",
+  Rpk: "core",
+  Rvk: "core",
 };
 
 const CAPTION: Record<string, string> = {
@@ -27,6 +30,7 @@ const CAPTION: Record<string, string> = {
   skewCompare: "Skewness is the lean of the height distribution: negative = plateau with deep valleys, positive = peaks above a flat, zero = symmetric.",
   kurtCompare: "Kurtosis is the peakedness of the distribution: below 3 is broad and bumpy, 3 is Gaussian, above 3 is spiky with sharp peaks or deep scratches.",
   slope: "Local slope at each point; the parameter is their RMS.",
+  core: "A flattest-40%-secant line through the bearing-area curve, extended to 0%/100% material ratio, brackets the load-bearing core (Rk); the peaks above it (Rpk) and valleys below it (Rvk) are sized to match the same area.",
 };
 
 export function vizCaption(key: string | null): string | null {
@@ -1040,6 +1044,72 @@ export function ParameterViz({
           ctx.lineTo(x + len * Math.cos(ang), y - len * Math.sin(ang));
           ctx.stroke();
         }
+      } else if (type === "core") {
+        // ISO 13565-2 core line: slide a secant spanning 40% of the material
+        // ratio across the sorted (bearing-area) profile to find its flattest
+        // span, then extend it to mr 0%/100% — those levels are h0/h100, and
+        // Rk is the gap between them. Shading the spatial trace against the
+        // same two levels shows the isolated peak/valley material directly.
+        const zs = [...z].sort((a, b) => b - a);
+        const win = Math.max(1, Math.round(0.4 * n));
+        let bestI = 0;
+        let bestDiff = Infinity;
+        for (let i = 0; i + win < n; i++) {
+          const diff = zs[i] - zs[i + win];
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            bestI = i;
+          }
+        }
+        const slope = (zs[bestI + win] - zs[bestI]) / win;
+        const h0 = zs[bestI] - slope * bestI;
+        const h100 = zs[bestI] + slope * (n - bestI);
+        const yH0 = yOf(h0);
+        const yH100 = yOf(h100);
+
+        drawMean();
+
+        // Peak zone (above h0).
+        ctx.beginPath();
+        ctx.moveTo(xOf(0), yH0);
+        for (let i = 0; i < n; i++) ctx.lineTo(xOf(i), Math.min(yOf(z[i]), yH0));
+        ctx.lineTo(xOf(n - 1), yH0);
+        ctx.closePath();
+        ctx.fillStyle = accent;
+        ctx.globalAlpha = 0.3;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Valley zone (below h100).
+        ctx.beginPath();
+        ctx.moveTo(xOf(0), yH100);
+        for (let i = 0; i < n; i++) ctx.lineTo(xOf(i), Math.max(yOf(z[i]), yH100));
+        ctx.lineTo(xOf(n - 1), yH100);
+        ctx.closePath();
+        ctx.fillStyle = "#e3a857";
+        ctx.globalAlpha = 0.3;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        drawTrace(good, 1.3);
+
+        ctx.strokeStyle = muted;
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad, yH0);
+        ctx.lineTo(pad + plotW, yH0);
+        ctx.moveTo(pad, yH100);
+        ctx.lineTo(pad + plotW, yH100);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        dimV(pad + plotW - 14, yH0, yH100, "Rk", accent);
+        ctx.fillStyle = accent;
+        ctx.font = "11px system-ui, sans-serif";
+        ctx.fillText("Rpk", pad + 4, yH0 - 4);
+        ctx.fillStyle = "#e3a857";
+        ctx.fillText("Rvk", pad + 4, yH100 + 13);
       }
     };
 

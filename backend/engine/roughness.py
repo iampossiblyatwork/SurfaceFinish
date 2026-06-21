@@ -26,6 +26,9 @@ class RoughnessParameters:
     Rc: float   # Mean height of profile elements
     RSm: float  # Mean width of profile elements (µm)
     RDq: float  # RMS profile slope (degrees)
+    Rk: float   # Core roughness depth (ISO 13565-2)
+    Rpk: float  # Reduced peak height (ISO 13565-2)
+    Rvk: float  # Reduced valley depth (ISO 13565-2)
 
 
 @dataclass
@@ -96,6 +99,57 @@ def _compute_rdq(z: np.ndarray, dx: float) -> float:
     return math.degrees(math.atan(rms_slope))
 
 
+@dataclass
+class CoreRoughnessParameters:
+    Rk: float
+    Rpk: float
+    Rvk: float
+    Mr1: float  # Material ratio (%) bounding the peak zone
+    Mr2: float  # Material ratio (%) bounding the valley zone
+
+
+def _compute_core_roughness(z: np.ndarray) -> CoreRoughnessParameters:
+    """ISO 13565-2 core roughness parameters from the linearized bearing-area curve.
+
+    Slides a secant spanning 40% of the material ratio across the sorted
+    (bearing-area) profile to find its flattest span — the core — then extends
+    that line to material ratios 0% and 100%. Rk is the vertical span between
+    those two extensions; Rpk and Rvk are the heights of right triangles whose
+    areas match the true peak/valley material lying outside the core band.
+    """
+    n = len(z)
+    if n < 3:
+        return CoreRoughnessParameters(Rk=0.0, Rpk=0.0, Rvk=0.0, Mr1=0.0, Mr2=100.0)
+
+    zs = np.sort(z)[::-1]  # descending: index position ↔ material ratio
+    window = min(n - 1, max(1, round(0.4 * n)))
+
+    diffs = zs[:-window] - zs[window:]
+    i0 = int(np.argmin(diffs))
+    slope = (zs[i0 + window] - zs[i0]) / window
+
+    h0 = float(zs[i0] - slope * i0)            # core line extended to mr = 0%
+    h100 = float(zs[i0] + slope * (n - i0))     # core line extended to mr = 100%
+    Rk = h0 - h100
+
+    mr1_idx = int(np.searchsorted(-zs, -h0, side="left"))
+    mr2_idx = int(np.searchsorted(-zs, -h100, side="left"))
+    mr1_idx = min(max(mr1_idx, 1), n - 1)
+    mr2_idx = min(max(mr2_idx, mr1_idx), n - 1)
+
+    peak_excess = float(np.sum(zs[:mr1_idx] - h0))
+    Rpk = max(0.0, 2 * peak_excess / mr1_idx)
+
+    tail = n - mr2_idx
+    valley_excess = float(np.sum(h100 - zs[mr2_idx:]))
+    Rvk = max(0.0, 2 * valley_excess / tail) if tail > 0 else 0.0
+
+    return CoreRoughnessParameters(
+        Rk=Rk, Rpk=Rpk, Rvk=Rvk,
+        Mr1=mr1_idx / n * 100.0, Mr2=mr2_idx / n * 100.0,
+    )
+
+
 def compute_parameters(z: np.ndarray, dx: float) -> RoughnessParameters:
     """Compute the full ISO 4287 2D parameter suite from a centred profile."""
     z = center_profile(z)
@@ -104,6 +158,7 @@ def compute_parameters(z: np.ndarray, dx: float) -> RoughnessParameters:
         return RoughnessParameters(
             Ra=0, Rq=0, Rp=0, Rv=0, Rz=0, Rt=0,
             Rsk=0, Rku=0, Rc=0, RSm=0, RDq=0,
+            Rk=0, Rpk=0, Rvk=0,
         )
 
     Ra = float(np.mean(np.abs(z)))
@@ -116,10 +171,12 @@ def compute_parameters(z: np.ndarray, dx: float) -> RoughnessParameters:
     Rku = float(np.mean(z ** 4) / Rq ** 4) if Rq > 0 else 0.0
     RSm, Rc = _compute_element_stats(z, dx, Rq)
     RDq = _compute_rdq(z, dx)
+    core = _compute_core_roughness(z)
 
     return RoughnessParameters(
         Ra=Ra, Rq=Rq, Rp=Rp, Rv=Rv, Rz=Rz, Rt=Rt,
         Rsk=Rsk, Rku=Rku, Rc=Rc, RSm=RSm, RDq=RDq,
+        Rk=core.Rk, Rpk=core.Rpk, Rvk=core.Rvk,
     )
 
 
