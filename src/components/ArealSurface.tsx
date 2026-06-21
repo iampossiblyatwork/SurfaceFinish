@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { PointerEvent } from "react";
 import { useUnits } from "../context/UnitsContext";
 import { formatLength } from "../lib/grades";
 
@@ -165,6 +166,13 @@ function cssVar(name: string, fallback: string): string {
   );
 }
 
+// Orbit camera: azimuth spins around the vertical axis, elevation tilts the
+// camera up/down. Both are dragged directly on the canvas.
+const DEFAULT_AZ = -50; // degrees
+const DEFAULT_EL = 35;
+const EL_MIN = 8;
+const EL_MAX = 85;
+
 export function ArealSurface() {
   const { unit } = useUnits();
   const [lay, setLay] = useState<Lay>("cross");
@@ -172,6 +180,8 @@ export function ArealSurface() {
   const [period, setPeriod] = useState(10);
   const [angle, setAngle] = useState(50);
   const [seed, setSeed] = useState(1);
+  const [az, setAz] = useState(DEFAULT_AZ);
+  const [el, setEl] = useState(DEFAULT_EL);
 
   const H = useMemo(
     () => makeHeightmap(lay, { sa, period, angle, seed }),
@@ -181,6 +191,7 @@ export function ArealSurface() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ x: number; y: number; az: number; el: number } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -206,19 +217,55 @@ export function ArealSurface() {
       for (const row of H) for (const v of row) hmax = Math.max(hmax, Math.abs(v));
       if (hmax === 0) hmax = 1;
 
-      const cw = (cssW * 0.74) / NX;
-      const rx = (cssW * 0.18) / NY;
-      const ry = (cssH * 0.46) / NY;
-      const ox = cssW * 0.05;
-      const oy = cssH * 0.3;
-      const zs = (cssH * 0.24) / hmax;
+      // Orbit camera basis: `dir` points from the surface toward the camera;
+      // `right` / `up` span the view plane. Projecting onto them gives screen
+      // position, and the component along `dir` gives depth for the painter's
+      // algorithm (draw far quads first, near quads last).
+      const azR = (az * Math.PI) / 180;
+      const elR = (el * Math.PI) / 180;
+      const dir = [
+        Math.cos(elR) * Math.sin(azR),
+        -Math.cos(elR) * Math.cos(azR),
+        Math.sin(elR),
+      ];
+      const worldUp = [0, 0, 1];
+      let right = [
+        worldUp[1] * dir[2] - worldUp[2] * dir[1],
+        worldUp[2] * dir[0] - worldUp[0] * dir[2],
+        worldUp[0] * dir[1] - worldUp[1] * dir[0],
+      ];
+      const rlen = Math.hypot(right[0], right[1], right[2]) || 1;
+      right = [right[0] / rlen, right[1] / rlen, right[2] / rlen];
+      const up = [
+        dir[1] * right[2] - dir[2] * right[1],
+        dir[2] * right[0] - dir[0] * right[2],
+        dir[0] * right[1] - dir[1] * right[0],
+      ];
 
-      const sx = (c: number, r: number) => ox + c * cw + r * rx;
-      const sy = (r: number, h: number) => oy + r * ry - h * zs;
+      const cellW = (cssW * 0.8) / NX;
+      const cellD = (cssW * 0.8) / NY;
+      const zScale = (cssH * 0.5) / hmax;
+      const ox = cssW * 0.5;
+      const oy = cssH * 0.52;
+
+      // Project a grid point (column c, row r, height h) into screen space and
+      // a camera-space depth (larger = nearer the camera).
+      const project = (c: number, r: number, h: number) => {
+        const px = (c - NX / 2) * cellW;
+        const py = (r - NY / 2) * cellD;
+        const pz = h * zScale;
+        const sx = ox + px * right[0] + py * right[1] + pz * right[2];
+        const sy = oy - (px * up[0] + py * up[1] + pz * up[2]);
+        const depth = px * dir[0] + py * dir[1] + pz * dir[2];
+        return { sx, sy, depth };
+      };
 
       const lightX = -0.4;
       const lightY = -0.5;
       const lightZ = 0.76;
+
+      type Quad = { sx: number[]; sy: number[]; depth: number; color: [number, number, number]; sh: number };
+      const quads: Quad[] = [];
 
       for (let r = 0; r < NY - 1; r++) {
         for (let c = 0; c < NX - 1; c++) {
@@ -227,7 +274,7 @@ export function ArealSurface() {
           const h11 = H[r + 1][c + 1];
           const h01 = H[r + 1][c];
           const avg = (h00 + h10 + h11 + h01) / 4;
-          const [cr, cg, cb] = turbo((avg + hmax) / (2 * hmax));
+          const color = turbo((avg + hmax) / (2 * hmax));
 
           const dzdx = h10 - h00;
           const dzdy = h01 - h00;
@@ -243,15 +290,31 @@ export function ArealSurface() {
             ),
           );
 
-          ctx.fillStyle = `rgb(${Math.round(cr * sh)},${Math.round(cg * sh)},${Math.round(cb * sh)})`;
-          ctx.beginPath();
-          ctx.moveTo(sx(c, r), sy(r, h00));
-          ctx.lineTo(sx(c + 1, r), sy(r, h10));
-          ctx.lineTo(sx(c + 1, r + 1), sy(r + 1, h11));
-          ctx.lineTo(sx(c, r + 1), sy(r + 1, h01));
-          ctx.closePath();
-          ctx.fill();
+          const p00 = project(c, r, h00);
+          const p10 = project(c + 1, r, h10);
+          const p11 = project(c + 1, r + 1, h11);
+          const p01 = project(c, r + 1, h01);
+          quads.push({
+            sx: [p00.sx, p10.sx, p11.sx, p01.sx],
+            sy: [p00.sy, p10.sy, p11.sy, p01.sy],
+            depth: (p00.depth + p10.depth + p11.depth + p01.depth) / 4,
+            color,
+            sh,
+          });
         }
+      }
+
+      quads.sort((a, b) => a.depth - b.depth);
+      for (const q of quads) {
+        const [cr, cg, cb] = q.color;
+        ctx.fillStyle = `rgb(${Math.round(cr * q.sh)},${Math.round(cg * q.sh)},${Math.round(cb * q.sh)})`;
+        ctx.beginPath();
+        ctx.moveTo(q.sx[0], q.sy[0]);
+        ctx.lineTo(q.sx[1], q.sy[1]);
+        ctx.lineTo(q.sx[2], q.sy[2]);
+        ctx.lineTo(q.sx[3], q.sy[3]);
+        ctx.closePath();
+        ctx.fill();
       }
     };
 
@@ -259,14 +322,43 @@ export function ArealSurface() {
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [H]);
+  }, [H, az, el]);
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    dragRef.current = { x: e.clientX, y: e.clientY, az, el };
+  };
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    setAz(drag.az + dx * 0.4);
+    setEl(Math.min(EL_MAX, Math.max(EL_MIN, drag.el - dy * 0.4)));
+  };
+  const onPointerUp = () => {
+    dragRef.current = null;
+  };
+  const onDoubleClick = () => {
+    setAz(DEFAULT_AZ);
+    setEl(DEFAULT_EL);
+  };
 
   const directional = lay !== "iso";
 
   return (
     <div className="filter-demo">
-      <div ref={wrapRef} className="filter-demo-canvas">
-        <canvas ref={canvasRef} role="img" aria-label={`Synthesized areal surface, ${lay} lay`} />
+      <div
+        ref={wrapRef}
+        className="filter-demo-canvas areal-canvas"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onDoubleClick={onDoubleClick}
+      >
+        <canvas ref={canvasRef} role="img" aria-label={`Synthesized areal surface, ${lay} lay, rotatable — drag to orbit`} />
+        <span className="areal-rotate-hint" aria-hidden="true">⟲ drag to rotate · double-click to reset</span>
       </div>
 
       <div className="filter-demo-readout areal-readout">
