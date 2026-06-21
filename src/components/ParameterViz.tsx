@@ -96,6 +96,11 @@ export function AbbottCurve() {
   const scale = 58 / (mx * 1.08);
   const splitX = 150;
 
+  // Give the normalized teaching profile a realistic total height so the section
+  // depth c reads in micrometers — the way a drawing callout actually states it.
+  const RT_UM = 1.0; // peak-to-valley height of the teaching profile (µm)
+  const SPEC_MR = 0.9; // the typical "Rmr c = 90%" bearing-ratio callout target
+
   // Height extremes set the depth axis: depthFrac 0 = highest peak, 1 = deepest
   // valley. The lapping plane sits at planeHeight; everything above it is the
   // material currently in bearing contact.
@@ -108,6 +113,7 @@ export function AbbottCurve() {
   const span = hi - lo || 1;
   const planeHeight = hi - depthFrac * span;
   const yPlane = mid - planeHeight * scale;
+  const depthUm = depthFrac * RT_UM; // section depth c below the highest peak
 
   // Rmr(c): fraction of the surface at or above the plane — rises from ~0 % at
   // the peak to 100 % at the deepest valley as the plane laps downward.
@@ -150,6 +156,17 @@ export function AbbottCurve() {
   const markerX = splitX + distW * mr;
   const pct = Math.round(mr * 100);
 
+  // The 90 % callout target on the bearing curve, and the section depth at which
+  // this surface first reaches it (the c a drawing would have to allow).
+  const specX = splitX + distW * SPEC_MR;
+  const cAt90 = ((hi - zs[Math.round(SPEC_MR * N)]) / span) * RT_UM;
+  const meetsSpec = mr >= SPEC_MR;
+
+  // Profile depth scale (right gutter): 0 µm at the highest peak, RT_UM at the
+  // deepest valley, with a tick riding the current lapping plane.
+  const yPeak = mid - hi * scale;
+  const yValley = mid - lo * scale;
+
   return (
     <div className="abbott">
       <svg viewBox="0 0 360 152" className="stylus-fig wide" role="img" aria-label="Interactive Abbott–Firestone bearing-area curve with a lapping plane swept through the profile">
@@ -171,8 +188,16 @@ export function AbbottCurve() {
             </g>
           );
         })}
+        {/* Depth scale (µm) down the right edge of the profile panel. */}
+        <line x1={x1 + 6} y1={yPeak} x2={x1 + 6} y2={yValley} stroke="var(--muted)" strokeWidth={1} />
+        <line x1={x1 + 3} y1={yPlane} x2={x1 + 9} y2={yPlane} stroke="var(--accent)" strokeWidth={1.6} />
+        <text x={x1 + 11} y={yPeak + 3} fill="var(--muted)" fontSize={8} fontFamily="system-ui, sans-serif">0</text>
+        <text x={x1 + 11} y={yValley} fill="var(--muted)" fontSize={8} fontFamily="system-ui, sans-serif">{RT_UM.toFixed(1)}µm</text>
         <line x1={splitX} y1={14} x2={splitX} y2={132} stroke="var(--grid)" strokeWidth={1} />
         <polyline points={curve} fill="none" stroke="var(--good)" strokeWidth={2.2} strokeLinejoin="round" />
+        {/* Typical "Rmr c = 90%" bearing-ratio callout target on the curve. */}
+        <line x1={specX} y1={16} x2={specX} y2={132} stroke="#e3a857" strokeWidth={1.2} strokeDasharray="3 3" />
+        <text x={specX - 2} y={23} fill="#e3a857" fontSize={9} textAnchor="end" fontFamily="system-ui, sans-serif">90%</text>
         {/* Marker where the plane crosses the bearing curve, dropped to the axis. */}
         <line x1={markerX} y1={yPlane} x2={markerX} y2={134} stroke="var(--accent)" strokeWidth={1} strokeDasharray="2 3" />
         <circle cx={markerX} cy={yPlane} r={3.5} fill="var(--accent)" />
@@ -181,7 +206,8 @@ export function AbbottCurve() {
       </svg>
       <div className="abbott-control">
         <span className="abbott-readout">
-          Bearing length = <strong>{pct}%</strong> of L — Rmr(c) at this depth
+          Depth c = <strong>{depthUm.toFixed(2)} µm</strong> · bearing Rmr ={" "}
+          <strong>{pct}%</strong> of L
         </span>
         <input
           type="range"
@@ -192,6 +218,12 @@ export function AbbottCurve() {
           onChange={(e) => setDepthFrac(Number(e.target.value))}
           aria-label="Lapping plane depth"
         />
+        <span className="abbott-callout">
+          A drawing calls this out as <code>Rmr c = 90%</code> — at least 90 %
+          material by section depth c. This surface crosses the amber 90 % line
+          at <strong>c ≈ {cAt90.toFixed(2)} µm</strong>
+          {meetsSpec ? " — the plane is past it now." : "; drag deeper to reach it."}
+        </span>
       </div>
     </div>
   );

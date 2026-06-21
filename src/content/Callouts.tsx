@@ -106,6 +106,47 @@ function FilledExample({ upper, lower, lay }: {
   );
 }
 
+// Worked example: how a bearing-ratio (Rmr) callout reads on the material-ratio
+// curve. An idealized plateau surface that just meets "Rmr c0.3 = 90%": at the
+// section depth c = 0.3 µm below the highest peak, 90% of the length is solid.
+function BearingCallout() {
+  const x0 = 50, x1 = 320, yTop = 30, yBot = 170;
+  const xOf = (mr: number) => x0 + (x1 - x0) * mr;
+  const yOf = (d: number) => yTop + (yBot - yTop) * d; // d in µm, Rt = 1 µm
+  // Plateau-then-cliff bearing curve: shallow depth across most of the ratio,
+  // then a steep plunge into the valleys past 90%.
+  const depth = (mr: number) =>
+    mr <= 0.9 ? 0.3 * Math.pow(mr / 0.9, 1.8) : 0.3 + 0.7 * Math.pow((mr - 0.9) / 0.1, 0.7);
+  const pts = Array.from({ length: 81 }, (_, i) => {
+    const mr = i / 80;
+    return `${xOf(mr).toFixed(1)},${yOf(depth(mr)).toFixed(1)}`;
+  }).join(" ");
+  const xSpec = xOf(0.9);
+  const ySpec = yOf(0.3);
+  const amber = "#e3a857";
+  const yMid = (yTop + yBot) / 2;
+  return (
+    <svg viewBox="0 0 340 200" className="bearing-callout" role="img"
+      aria-label="Reading an Rmr c = 90% callout on the material-ratio curve">
+      <line x1={x0} y1={yTop} x2={x0} y2={yBot} stroke="var(--muted)" strokeWidth={1} />
+      <line x1={x0} y1={yBot} x2={x1} y2={yBot} stroke="var(--muted)" strokeWidth={1} />
+      <polyline points={pts} fill="none" stroke="var(--good)" strokeWidth={2.4} strokeLinejoin="round" />
+      {/* Spec construction: section depth c across to the 90% material ratio. */}
+      <line x1={xSpec} y1={yTop} x2={xSpec} y2={yBot} stroke={amber} strokeWidth={1.3} strokeDasharray="4 3" />
+      <line x1={x0} y1={ySpec} x2={xSpec} y2={ySpec} stroke={amber} strokeWidth={1.3} strokeDasharray="4 3" />
+      <circle cx={xSpec} cy={ySpec} r={4} fill={amber} />
+      <text x={(x0 + xSpec) / 2} y={ySpec - 6} fill={amber} fontSize={13} textAnchor="middle" fontFamily="system-ui, sans-serif">c = 0.3 µm</text>
+      <text x={xSpec} y={yBot + 16} fill={amber} fontSize={13} textAnchor="middle" fontFamily="system-ui, sans-serif">90%</text>
+      <text x={x0} y={yBot + 16} fill="var(--muted)" fontSize={11} textAnchor="middle" fontFamily="system-ui, sans-serif">0%</text>
+      <text x={x1} y={yBot + 16} fill="var(--muted)" fontSize={11} textAnchor="middle" fontFamily="system-ui, sans-serif">100%</text>
+      <text x={(x0 + x1) / 2} y={196} fill="var(--muted)" fontSize={11} textAnchor="middle" fontFamily="system-ui, sans-serif">material ratio →</text>
+      <text x={44} y={yTop + 3} fill="var(--muted)" fontSize={10} textAnchor="end" fontFamily="system-ui, sans-serif">0</text>
+      <text x={44} y={yBot} fill="var(--muted)" fontSize={10} textAnchor="end" fontFamily="system-ui, sans-serif">1 µm</text>
+      <text x={16} y={yMid} fill="var(--muted)" fontSize={11} textAnchor="middle" fontFamily="system-ui, sans-serif" transform={`rotate(-90 16 ${yMid})`}>depth ↓</text>
+    </svg>
+  );
+}
+
 // ─── Data tables ──────────────────────────────────────────────────────────────
 
 const LAY = [
@@ -181,7 +222,40 @@ export function Callouts({ onNavigate }: { onNavigate?: (id: string) => void }) 
           <FilledExample upper="Ra 0.8" lower="Rz 6.3" lay="=" />
           <figcaption>Two specs: Ra ≤ 0.8 and Rz ≤ 6.3 µm; lay parallel to the view plane.</figcaption>
         </figure>
+        <figure className="tex-sym-item">
+          <FilledExample upper="Rmr c0.3  90%" />
+          <figcaption>A bearing-ratio spec: at least 90% material by section depth c = 0.3 µm — a lower limit, common on sealing and bearing surfaces.</figcaption>
+        </figure>
       </div>
+
+      <Details summary="Reading a bearing-ratio (Rmr) callout">
+        <p>
+          A material-ratio callout is read differently from Ra or Rz. Instead of
+          a single height limit it fixes two things: a <strong>section depth c</strong>{" "}
+          below the highest peak, and the <strong>material ratio (%)</strong> the
+          surface must reach by that depth. Because more material means more
+          load-bearing area, it is almost always a <strong>lower limit (≥)</strong>.
+        </p>
+        <figure className="lesson-figure">
+          <BearingCallout />
+          <figcaption>
+            Drop a plane to depth c, then measure how much of the trace length is
+            solid at that level — that is Rmr(c). Here the plane at c = 0.3 µm
+            meets 90% material, so the surface passes <code>Rmr c0.3 = 90%</code>.
+          </figcaption>
+        </figure>
+        <p>
+          Plateau-honed surfaces — engine bores, seal faces — are designed for
+          exactly this: a flat load-bearing top reaches a high material ratio at
+          shallow depth, while the deep valleys below it hold oil. The bearing
+          curve's fast early rise is what the callout is buying.
+        </p>
+        <Callout label="See it live">
+          On the <strong>Material ratio curve</strong> page you can drag the
+          lapping plane through a profile and watch Rmr(c) and the section depth c
+          move together against the same 90% line.
+        </Callout>
+      </Details>
 
       <Details summary="Parameter specification format (the D F S-L / R Z N C V string)">
       <p>The "a"/"b" field follows the form <code>D&nbsp;F&nbsp;S-L / R&nbsp;Z&nbsp;N&nbsp;C&nbsp;V</code>:</p>
@@ -225,6 +299,7 @@ export function Callouts({ onNavigate }: { onNavigate?: (id: string) => void }) 
         items={[
           { id: "realworld", label: "Meeting Spec in the Real World", note: "The callout gave no filter — now what?" },
           { id: "filt-choosing", label: "Choosing a cutoff", note: "Pick the filter the drawing left off" },
+          { id: "prof-material", label: "Material ratio curve", note: "Drag the lapping plane — read Rmr live" },
         ]}
       />
     </Lesson>
